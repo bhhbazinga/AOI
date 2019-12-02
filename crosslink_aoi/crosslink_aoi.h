@@ -1,48 +1,41 @@
 #ifndef CROSSLINK_AOI_H
 #define CROSSLINK_AOI_H
 
-#include "../aoi.h"
-#include "skiplist.h"
+#include "aoi.h"
+#include "crosslink_aoi/crosslink_aoi.h"
 
 // The cross-link model is optimized using skiplist
 class CrosslinkAOI : public AOI {
- public:
-  CrosslinkAOI(const float width, const float height,
-               AOI::Callback enter_callback, AOI::Callback leave_callback,
-               const float visible_range = kDefaultVisibleRange)
-      : AOI(width, height, enter_callback, leave_callback, visible_range) {}
-  ~CrosslinkAOI() override {}
+ private:
+  class SkipList;
+  struct Unit;
 
-  AOI::Unit* AddUnit(int id, float x, float y) override;
-  void UpdateUnit(int id, float x, float y) override;
-  void RemoveUnit(int id) override;
+ public:
+  CrosslinkAOI(const float width, const float height, const float visible_range,
+               const AOI::Callback& enter_callback,
+               const AOI::Callback& leave_callback);
+
+  ~CrosslinkAOI() override;
+
+  inline AOI::Unit* AddUnit(const int id, const float x,
+                            const float y) override;
+  void UpdateUnit(const int id, const float x, const float y) override;
+  void RemoveUnit(const int id) override {
+    AOI::Unit* unit = get_unit(id);
+    const AOI::UnitSet& subscribe_set = unit->subscribe_set;
+    NotifyLeave(unit, subscribe_set);
+
+    AOI::RemoveUnit(id);
+  }
 
  protected:
-  AOI::UnitSet FindNearbyUnit(AOI::Unit*, const float range) const override;
+  inline AOI::UnitSet FindNearbyUnit(AOI::Unit*,
+                                     const float range) const override;
 
  private:
-  struct ComparatorX {
-    bool operator()(const AOI::Unit* const unit,
-                    const AOI::Unit* const other) const {
-      if (abs(unit->x - other->x) > 1e-6) {
-        return unit->x < other->x;
-      }
-      return unit->id < other->id;
-    }
-  };
+  AOI::Unit* NewUnit(const int id, const float x, const float y) override;
 
-  struct ComparatorY {
-    bool operator()(const AOI::Unit* const unit,
-                    const AOI::Unit* const other) const {
-      if (abs(unit->y - other->y) > 1e-6) {
-        return unit->y < other->y;
-      }
-      return unit->id < other->id;
-    }
-  };
-
-  SkipList<Unit*, ComparatorX> x_list_;
-  SkipList<Unit*, ComparatorY> y_list_;
+  SkipList* x_list_;
+  SkipList* y_list_;
 };
-
 #endif  // CROSSLINK_AOI_H

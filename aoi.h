@@ -8,22 +8,20 @@
 #include <unordered_set>
 #include <vector>
 
-const float kDefaultVisibleRange = 64;
-
 class AOI {
  public:
   struct Unit;
 
   typedef std::unordered_set<Unit*> UnitSet;
   struct Unit {
-    Unit(int id_, float x_, float y_) : id(id_), x(x_), y(y_) {}
+    Unit(const int id_, const float x_, const float y_) : id(id_), x(x_), y(y_) {}
 
     ~Unit(){};
 
     void Subscribe(Unit* const other) { subscribe_set.insert(other); }
     void UnSubscribe(Unit* const other) { subscribe_set.erase(other); }
 
-    int id;
+    const int id;
     float x;
     float y;
     UnitSet subscribe_set;
@@ -32,13 +30,13 @@ class AOI {
  public:
   typedef std::function<void(int, int)> Callback;
 
-  AOI(const float width, const float height, Callback enter_callback,
-      Callback leave_callback, const float visible_range = kDefaultVisibleRange)
+  AOI(const float width, const float height, const float visible_range,
+      Callback enter_callback, Callback leave_callback)
       : width_(width),
         height_(height),
+        visible_range_(visible_range),
         enter_callback_(enter_callback),
-        leave_callback_(leave_callback),
-        visible_range_(visible_range) {
+        leave_callback_(leave_callback) {
     assert(width_ >= 0);
     assert(height_ >= 0);
     assert(visible_range >= 0);
@@ -61,7 +59,7 @@ class AOI {
 
   // Update when unit moved
   // id is a custom integer
-  virtual void UpdateUnit(int id, float x, float y) {
+  virtual void UpdateUnit(const int id, const float x, const float y) {
     (void)id;
     assert(x <= width_);
     assert(y <= width_);
@@ -69,11 +67,11 @@ class AOI {
 
   // Add unit to AOI
   // id is a custom integer
-  virtual Unit* AddUnit(int id, float x, float y) {
+  virtual Unit* AddUnit(const int id, const float x, const float y) {
     assert(x <= width_ && y <= height_);
     assert(unit_map_.find(id) == unit_map_.end());
 
-    Unit* unit = new Unit(id, x, y);
+    Unit* unit = NewUnit(id, x, y);
     unit_map_.insert(std::pair(unit->id, unit));
     return unit;
   };
@@ -104,7 +102,7 @@ class AOI {
     std::unordered_set<int> id_set;
     for (const auto& unit : subscribe_set) {
       id_set.insert(unit->id);
-    } 
+    }
     return id_set;
   };
 
@@ -113,6 +111,9 @@ class AOI {
 
  protected:
   virtual UnitSet FindNearbyUnit(Unit* unit, const float range) const = 0;
+  virtual Unit* NewUnit(const int id, const float x, const float y) {
+    return new Unit(id, x, y);
+  }
 
   Unit* get_unit(int id) const { return unit_map_[id]; }
 
@@ -160,11 +161,11 @@ class AOI {
 
   const float width_;
   const float height_;
-  Callback enter_callback_;
-  Callback leave_callback_;
   const float visible_range_;
 
  private:
+  Callback enter_callback_;
+  Callback leave_callback_;
   mutable std::unordered_map<int, Unit*> unit_map_;
 };
 
