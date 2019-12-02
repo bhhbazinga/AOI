@@ -1,5 +1,4 @@
 #include "crosslink_aoi/crosslink_aoi.h"
-#include "crosslink_aoi/scene.h"
 
 #include <chrono>
 #include <vector>
@@ -38,21 +37,17 @@ void CrosslinkAOIUsage() {
 void TestCrosslinkAOI(const int max_units) {
   CrosslinkAOI cl_aoi(kMapWidth, kMapHeight, kVisibleRange, [](int, int) {},
                       [](int, int) {});
-  Scene scene;
   auto t1 = std::chrono::steady_clock::now();
   for (int i = 0; i < max_units; ++i) {
-    // cl_aoi.AddUnit(i, random() % kMapWidth, random() % kMapHeight);
-    scene.Add(i, random() % kMapWidth, random() % kMapHeight);
+    cl_aoi.AddUnit(i, random() % kMapWidth, random() % kMapHeight);
   }
   auto t2 = std::chrono::steady_clock::now();
   for (int i = 0; i < max_units; ++i) {
-    // cl_aoi.UpdateUnit(i, random() % kMapWidth, random() % kMapHeight);
-    scene.Move(i, random() % kMapWidth, random() % kMapHeight);
+    cl_aoi.UpdateUnit(i, random() % kMapWidth, random() % kMapHeight);
   }
   auto t3 = std::chrono::steady_clock::now();
   for (int i = 0; i < max_units; ++i) {
-    // cl_aoi.RemoveUnit(i);
-    scene.Leave(i);
+    cl_aoi.RemoveUnit(i);
   }
   auto t4 = std::chrono::steady_clock::now();
 
