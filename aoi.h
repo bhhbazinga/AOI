@@ -14,12 +14,17 @@ class AOI {
 
   typedef std::unordered_set<Unit*> UnitSet;
   struct Unit {
-    Unit(const int id_, const float x_, const float y_) : id(id_), x(x_), y(y_) {}
+    Unit(const int id_, const float x_, const float y_)
+        : id(id_), x(x_), y(y_) {}
 
     ~Unit(){};
 
-    void Subscribe(Unit* const other) { subscribe_set.insert(other); }
-    void UnSubscribe(Unit* const other) { subscribe_set.erase(other); }
+    void Subscribe(const Unit* other) {
+      subscribe_set.insert(const_cast<Unit*>(other));
+    }
+    void UnSubscribe(const Unit* other) {
+      subscribe_set.erase(const_cast<Unit*>(other));
+    }
 
     const int id;
     float x;
@@ -45,12 +50,7 @@ class AOI {
     assert(nullptr != leave_callback);
   }
 
-  virtual ~AOI() {
-    for (const auto& pair : unit_map_) {
-      Unit* unit = pair.second;
-      delete unit;
-    }
-  };
+  virtual ~AOI(){};
 
   AOI(const AOI&) = delete;
   AOI(AOI&&) = delete;
@@ -67,13 +67,12 @@ class AOI {
 
   // Add unit to AOI
   // id is a custom integer
-  virtual Unit* AddUnit(const int id, const float x, const float y) {
+  virtual void AddUnit(const int id, const float x, const float y) {
     assert(x <= width_ && y <= height_);
     assert(unit_map_.find(id) == unit_map_.end());
 
     Unit* unit = NewUnit(id, x, y);
     unit_map_.insert(std::pair(unit->id, unit));
-    return unit;
   };
 
   // Remove unit from AOI
@@ -81,7 +80,7 @@ class AOI {
   virtual void RemoveUnit(int id) {
     Unit* unit = unit_map_[id];
     unit_map_.erase(id);
-    delete unit;
+    DeleteUnit(unit);
   };
 
   // Find the ids of units in range near the given id, and exclude id itself
@@ -111,9 +110,8 @@ class AOI {
 
  protected:
   virtual UnitSet FindNearbyUnit(Unit* unit, const float range) const = 0;
-  virtual Unit* NewUnit(const int id, const float x, const float y) {
-    return new Unit(id, x, y);
-  }
+  virtual Unit* NewUnit(const int id, const float x, const float y) = 0;
+  virtual void DeleteUnit(Unit* unit) = 0;
 
   Unit* get_unit(int id) const { return unit_map_[id]; }
 
@@ -162,11 +160,11 @@ class AOI {
   const float width_;
   const float height_;
   const float visible_range_;
+  mutable std::unordered_map<int, Unit*> unit_map_;
 
  private:
   Callback enter_callback_;
   Callback leave_callback_;
-  mutable std::unordered_map<int, Unit*> unit_map_;
 };
 
 #endif  // AOI_H

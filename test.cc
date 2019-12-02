@@ -26,33 +26,33 @@ void leave_callback(int me, int other) {
 }
 
 void CrosslinkAOIUsage() {
-  // CrosslinkAOI cl_aoi(64, 64, enter_callback, leave_callback, 4);
-  // cl_aoi.AddUnit(1, 1, 1);
-  // cl_aoi.AddUnit(2, 2, 2);
-  // cl_aoi.AddUnit(3, 3, 3);
-  // cl_aoi.UpdateUnit(1, 60, 60);
-  // cl_aoi.UpdateUnit(1, 4, 4);
-  // cl_aoi.RemoveUnit(1);
+  CrosslinkAOI cl_aoi(64, 64, 4, enter_callback, leave_callback);
+  cl_aoi.AddUnit(1, 1, 1);
+  cl_aoi.AddUnit(2, 2, 2);
+  cl_aoi.AddUnit(3, 3, 3);
+  cl_aoi.UpdateUnit(1, 60, 60);
+  cl_aoi.UpdateUnit(1, 4, 4);
+  cl_aoi.RemoveUnit(1);
 }
 
 void TestCrosslinkAOI(const int max_units) {
-  CrosslinkAOI cl_aoi(kMapWidth, kMapHeight, kVisibleRange, [](int, int) {}, [](int, int) {}
-                      );
+  CrosslinkAOI cl_aoi(kMapWidth, kMapHeight, kVisibleRange, [](int, int) {},
+                      [](int, int) {});
   Scene scene;
   auto t1 = std::chrono::steady_clock::now();
   for (int i = 0; i < max_units; ++i) {
-    cl_aoi.AddUnit(i, random() % kMapWidth, random() % kMapHeight);
-    // scene.Add(i, random() % kMapWidth, random() % kMapHeight);
+    // cl_aoi.AddUnit(i, random() % kMapWidth, random() % kMapHeight);
+    scene.Add(i, random() % kMapWidth, random() % kMapHeight);
   }
   auto t2 = std::chrono::steady_clock::now();
   for (int i = 0; i < max_units; ++i) {
-    cl_aoi.UpdateUnit(i, random() % kMapWidth, random() % kMapHeight);
-    // scene.Move(i, random() % kMapWidth, random() % kMapHeight);
+    // cl_aoi.UpdateUnit(i, random() % kMapWidth, random() % kMapHeight);
+    scene.Move(i, random() % kMapWidth, random() % kMapHeight);
   }
   auto t3 = std::chrono::steady_clock::now();
   for (int i = 0; i < max_units; ++i) {
-    cl_aoi.RemoveUnit(i);
-    // scene.Leave(i);
+    // cl_aoi.RemoveUnit(i);
+    scene.Leave(i);
   }
   auto t4 = std::chrono::steady_clock::now();
 

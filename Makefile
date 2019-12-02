@@ -1,5 +1,5 @@
 CXX = g++
-CXXFLAGS = -Wall -Wextra -std=c++17 -g -O0
+CXXFLAGS = -Wall -Wextra -std=c++17 -g -O3
 # -fsanitize=address
 EXEC = test
 

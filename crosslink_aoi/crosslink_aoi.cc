@@ -2,49 +2,56 @@
 
 #include <algorithm>
 #include <cassert>
+#include <cstdio>
 #include <cstring>
 #include <functional>
 #include <random>
+
+#define Log(fmt, ...)                  \
+  do {                                 \
+    fprintf(stderr, fmt, __VA_ARGS__); \
+  } while (0)
 
 // It's almost guaranteed to be logn if the maximum number of nodes range in 0
 // to 2^14
 const int kMaxLevel = 14;
 
-#define COMPARATOR_DEF(name, field)                       \
-  struct name {                                           \
-    bool operator()(const AOI::Unit* const unit,          \
-                    const AOI::Unit* const other) const { \
-      if (abs(unit->field - other->field) > 1e-6f) {      \
-        return unit->field < other->field;                \
-      }                                                   \
-      return unit->id < other->id;                        \
-    }                                                     \
+#define COMPARATOR_DEF(name, field)                                        \
+  struct name {                                                            \
+    bool operator()(const AOI::Unit* unit, const AOI::Unit* other) const { \
+      if (fabs(unit->field - other->field) > 1e-6f) {                      \
+        return unit->field < other->field;                                 \
+      }                                                                    \
+      return unit->id < other->id;                                         \
+    }                                                                      \
   }
 
 COMPARATOR_DEF(ComparatorX, x);
 COMPARATOR_DEF(ComparatorY, y);
 
+// See also https://github.com/bhhbazinga/SkipList,
+// a generic skiplist implementation
 class CrosslinkAOI::SkipList {
- private:
-  struct SkipNode;
-  friend CrosslinkAOI;
-
  public:
-  typedef std::function<bool(const CrosslinkAOI::Unit* const,
-                             const CrosslinkAOI::Unit* const)>
+  struct SkipNode;
+
+  typedef std::function<bool(const CrosslinkAOI::Unit*,
+                             const CrosslinkAOI::Unit*)>
       Comparator;
-
-  SkipList() : head_(new SkipNode(kMaxLevel)) {}
-
-  SkipList(Comparator comp) : head_(new SkipNode(kMaxLevel)), compare_(comp) {
-    memset(&head_->nexts[0], 0, sizeof(head_->nexts[0]) * kMaxLevel);
-    memset(&head_->prevs[0], 0, sizeof(head_->prevs[0]) * kMaxLevel);
+  SkipList(Comparator&& comp)
+      : head_(new SkipNode(kMaxLevel)),
+        tail_(new SkipNode(kMaxLevel)),
+        compare_(std::move(comp)) {
+    for (int l = 0; l < kMaxLevel; ++l) {
+      head_->nexts[l] = tail_;
+      tail_->prevs[l] = head_;
+    }
   }
 
   ~SkipList() {
     SkipNode* p = head_;
     SkipNode* temp;
-    while (p) {
+    while (nullptr != p) {
       temp = p;
       p = p->nexts[0];
       delete temp;
@@ -56,47 +63,80 @@ class CrosslinkAOI::SkipList {
   SkipList& operator=(const SkipList& other) = delete;
   SkipList& operator=(SkipList&& other) = delete;
 
-  SkipNode* Insert(CrosslinkAOI::Unit* const data) {
+  SkipNode* Insert(CrosslinkAOI::Unit* data) {
     SkipNode* new_node = new SkipNode(RandomLevel(), data);
-    InsertForward(head_, new_node);
+    Insert(new_node);
     return new_node;
   }
 
-  void InsertForward(SkipNode* const begin_node, SkipNode* const new_node) {
+  void Insert(SkipNode* new_node) {
     SkipNode* prevs[kMaxLevel];
-    FindLastLessForward(begin_node, new_node->data, prevs);
+    FindLastLess(new_node->data, prevs);
 
-    int new_level = new_node->level;
-    for (int l = 0; l < new_level; ++l) {
+    for (int l = 0; l < new_node->level; ++l) {
       new_node->nexts[l] = prevs[l]->nexts[l];
       prevs[l]->nexts[l] = new_node;
       new_node->nexts[l]->prevs[l] = new_node;
+      new_node->prevs[l] = prevs[l];
     }
   }
 
-  void InsertBackward(SkipNode* const begin_node, SkipNode* const new_node) {
-    SkipNode* prevs[kMaxLevel];
-    FindLastGreaterBackward(begin_node, new_node->data, prevs);
-
-    int new_level = new_node->level;
-    for (int l = 0; l < new_level; ++l) {
-      new_node->prevs[l] = prevs[l]->prevs[l];
-      prevs[l]->prevs[l] = new_node;
-      new_node->prevs[l]->nexts[l] = new_node;
-    }
-  }
-
-  void Erase(SkipNode* const erase_node) {
+  void Erase(SkipNode* erase_node) {
     int erase_level = erase_node->level;
     for (int l = 0; l < erase_level; ++l) {
-      erase_node->prevs[l] = erase_node->nexts[l];
+      erase_node->prevs[l]->nexts[l] = erase_node->nexts[l];
       erase_node->nexts[l]->prevs[l] = erase_node->prevs[l];
+      erase_node->prevs[l] = nullptr;
+      erase_node->nexts[l] = nullptr;
     }
   }
 
-  typedef std::function<bool(Unit* const unit)> ForeachFunction;
-  inline void ForeachForward(SkipNode* const begin_node, ForeachFunction func);
-  inline void ForeachBackward(SkipNode* const begin_node, ForeachFunction func);
+  void EraseAndDelete(SkipNode* erase_node) {
+    Erase(erase_node);
+    delete erase_node;
+  }
+
+  SkipNode* Next(const SkipNode* node) const { return node->nexts[0]; }
+
+  SkipNode* Prev(const SkipNode* node) const { return node->prevs[0]; }
+
+  void Dump();
+
+  typedef std::function<bool(const Unit* data)> ForeachFunction;
+  void ForeachForward(const SkipNode* begin_node,
+                      const ForeachFunction& func) const;
+  void ForeachBackward(const SkipNode* begin_node,
+                       const ForeachFunction& func) const;
+
+  struct SkipNode {
+    SkipNode(const int level_)
+        : data(nullptr),
+          level(level_),
+          nexts(new SkipNode*[level]),
+          prevs(new SkipNode*[level]) {
+      memset(&nexts[0], 0, sizeof(nexts[0]) * level);
+      memset(&prevs[0], 0, sizeof(prevs[0]) * level);
+    }
+
+    SkipNode(const int level_, const CrosslinkAOI::Unit* data_)
+        : data(data_),
+          level(level_),
+          nexts(new SkipNode*[level]),
+          prevs(new SkipNode*[level]) {
+      memset(&nexts[0], 0, sizeof(nexts[0]) * level);
+      memset(&prevs[0], 0, sizeof(prevs[0]) * level);
+    }
+
+    ~SkipNode() {
+      delete[] nexts;
+      delete[] prevs;
+    }
+
+    const CrosslinkAOI::Unit* data;
+    int const level;
+    SkipNode** nexts;
+    SkipNode** prevs;
+  };
 
  private:
   int RandomLevel() const {
@@ -107,82 +147,47 @@ class CrosslinkAOI::SkipList {
     return level;
   }
 
-  bool Equals(CrosslinkAOI::Unit* const data,
-              CrosslinkAOI::Unit* const other) const {
+  bool Equals(const CrosslinkAOI::Unit* data,
+              const CrosslinkAOI::Unit* other) const {
     return !compare_(data, other) && !compare_(other, data);
   }
 
-  bool Less(CrosslinkAOI::Unit* const data,
-            CrosslinkAOI::Unit* const other) const {
+  bool Less(const CrosslinkAOI::Unit* data,
+            const CrosslinkAOI::Unit* other) const {
     return compare_(data, other);
   }
 
-  bool Greater(CrosslinkAOI::Unit* const data,
-               CrosslinkAOI::Unit* const other) const {
+  bool Greater(const CrosslinkAOI::Unit* data,
+               const CrosslinkAOI::Unit* other) const {
     return !Less(data, other) && !Equals(data, other);
   }
 
-#define FIND(field, compare)                              \
-  do {                                                    \
-    SkipNode* p = begin_node;                             \
-    int level = p->level - 1;                             \
-    while (level >= 0) {                                  \
-      SkipNode* next = p->field[level];                   \
-      if (nullptr != next && compare(data, next->data)) { \
-        p = next;                                         \
-        level = p->level;                                 \
-      } else {                                            \
-        prevs[level] = p;                                 \
-      }                                                   \
-      --level;                                            \
-    }                                                     \
-    return p;                                             \
-  } while (0)
-
-  SkipNode* FindLastLessForward(SkipNode* const begin_node,
-                                CrosslinkAOI::Unit* const data,
-                                SkipNode** const prevs) const {
-    FIND(nexts, Greater);
-  }
-
-  SkipNode* FindLastGreaterBackward(SkipNode* const begin_node,
-                                    CrosslinkAOI::Unit* const data,
-                                    SkipNode** const prevs) const {
-    FIND(prevs, Less);
-  }
-
-  struct SkipNode {
-    SkipNode(const int level_)
-        : data(nullptr),
-          level(level_),
-          nexts(new SkipNode*[level]),
-          prevs(new SkipNode*[level]) {}
-
-    SkipNode(const int level_, CrosslinkAOI::Unit* const data_)
-        : data(data_),
-          level(level_),
-          nexts(new SkipNode*[level]),
-          prevs(new SkipNode*[level]) {}
-
-    ~SkipNode() {
-      delete[] nexts;
-      delete[] prevs;
+  SkipNode* FindLastLess(const CrosslinkAOI::Unit* data,
+                         SkipNode** prevs) const {
+    SkipNode* p = head_;
+    int level = p->level - 1;
+    while (level >= 0) {
+      SkipNode* next = p->nexts[level];
+      if (tail_ != next && Greater(data, next->data)) {
+        p = next;
+        level = p->level;
+      } else {
+        prevs[level] = p;
+      }
+      --level;
     }
-
-    CrosslinkAOI::Unit* const data;
-    int const level;
-    SkipNode** const nexts;
-    SkipNode** const prevs;
-  };
+    return p;
+  }
 
   SkipNode* const head_;
+  SkipNode* const tail_;
   Comparator const compare_;
 };
 
-#define FOR_EACH(field)             \
+#define FOR_EACH(field, end)        \
   do {                              \
     const SkipNode* p = begin_node; \
-    while (nullptr != p) {          \
+    while (end != p) {              \
       if (func(p->data)) {          \
         p = p->field[0];            \
       } else {                      \
@@ -191,14 +196,14 @@ class CrosslinkAOI::SkipList {
     }                               \
   } while (0)
 
-inline void CrosslinkAOI::SkipList::ForeachForward(SkipNode* const begin_node,
-                                                   ForeachFunction func) {
-  FOR_EACH(nexts);
+void CrosslinkAOI::SkipList::ForeachForward(const SkipNode* begin_node,
+                                            const ForeachFunction& func) const {
+  FOR_EACH(nexts, tail_);
 }
 
-inline void CrosslinkAOI::SkipList::ForeachBackward(SkipNode* const begin_node,
-                                                    ForeachFunction func) {
-  FOR_EACH(prevs);
+void CrosslinkAOI::SkipList::ForeachBackward(
+    const SkipNode* begin_node, const ForeachFunction& func) const {
+  FOR_EACH(prevs, head_);
 }
 
 struct CrosslinkAOI::Unit : AOI::Unit {
@@ -209,9 +214,12 @@ struct CrosslinkAOI::Unit : AOI::Unit {
   SkipList::SkipNode* y_skip_node;
 };
 
-inline AOI::Unit* CrosslinkAOI::NewUnit(const int id, const float x,
-                                        const float y) {
+AOI::Unit* CrosslinkAOI::NewUnit(const int id, const float x, const float y) {
   return reinterpret_cast<AOI::Unit*>(new Unit(id, x, y));
+}
+
+void CrosslinkAOI::DeleteUnit(AOI::Unit* unit) {
+  delete reinterpret_cast<Unit*>(unit);
 }
 
 CrosslinkAOI::CrosslinkAOI(const float width, const float height,
@@ -225,10 +233,16 @@ CrosslinkAOI::CrosslinkAOI(const float width, const float height,
 CrosslinkAOI::~CrosslinkAOI() {
   delete x_list_;
   delete y_list_;
+
+  for (const auto& pair : unit_map_) {
+    AOI::Unit* unit = pair.second;
+    delete reinterpret_cast<Unit*>(unit);
+  }
 }
 
-inline AOI::Unit* CrosslinkAOI::AddUnit(int id, float x, float y) {
-  AOI::Unit* const unit = AOI::AddUnit(id, x, y);
+void CrosslinkAOI::AddUnit(int id, float x, float y) {
+  AOI::AddUnit(id, x, y);
+  AOI::Unit* unit = get_unit(id);
   reinterpret_cast<Unit*>(unit)->x_skip_node =
       x_list_->Insert(reinterpret_cast<Unit*>(unit));
   reinterpret_cast<Unit*>(unit)->y_skip_node =
@@ -238,50 +252,20 @@ inline AOI::Unit* CrosslinkAOI::AddUnit(int id, float x, float y) {
   NotifyEnter(unit, enter_set);
 
   unit->subscribe_set = std::move(enter_set);
-  return unit;
 }
-
-#define UPDATE(field)                                                \
-  do {                                                               \
-    SkipList::SkipNode* field##_skip_node = unit->field##_skip_node; \
-                                                                     \
-    if (field < old_##field) {                                       \
-      SkipList::SkipNode* begin = field##_skip_node->nexts[0];       \
-      if (nullptr != begin) {                                        \
-        field##_list_->Erase(field##_skip_node);                     \
-        field##_list_->InsertBackward(begin, field##_skip_node);     \
-      } else {                                                       \
-        begin = field##_skip_node->prevs[0];                         \
-        if (nullptr != begin && field < begin->data->field) {        \
-          field##_list_->Erase(field##_skip_node);                   \
-          field##_list_->InsertBackward(begin, field##_skip_node);   \
-        }                                                            \
-      }                                                              \
-    } else {                                                         \
-      SkipList::SkipNode* begin = field##_skip_node->prevs[0];       \
-      if (nullptr != begin) {                                        \
-        field##_list_->Erase(field##_skip_node);                     \
-        field##_list_->InsertForward(begin, field##_skip_node);      \
-      } else {                                                       \
-        begin = field##_skip_node->nexts[0];                         \
-        if (nullptr != begin && field > begin->data->field) {        \
-          field##_list_->Erase(field##_skip_node);                   \
-          field##_list_->InsertForward(begin, field##_skip_node);    \
-        }                                                            \
-      }                                                              \
-    }                                                                \
-  } while (0)
 
 void CrosslinkAOI::UpdateUnit(const int id, const float x, const float y) {
   AOI::UpdateUnit(id, x, y);
-  Unit* const unit = reinterpret_cast<Unit*>(get_unit(id));
-  const float old_x = unit->x;
-  const float old_y = unit->y;
+  Unit* unit = reinterpret_cast<Unit*>(get_unit(id));
+
+  SkipList::SkipNode* x_skip_node = unit->x_skip_node;
+  SkipList::SkipNode* y_skip_node = unit->y_skip_node;
+  x_list_->Erase(x_skip_node);
+  y_list_->Erase(y_skip_node);
   unit->x = x;
   unit->y = y;
-
-  UPDATE(x);
-  UPDATE(y);
+  x_list_->Insert(x_skip_node);
+  y_list_->Insert(y_skip_node);
 
   const AOI::UnitSet& old_set = unit->subscribe_set;
   AOI::UnitSet new_set =
@@ -294,33 +278,59 @@ void CrosslinkAOI::UpdateUnit(const int id, const float x, const float y) {
   NotifyAll(reinterpret_cast<AOI::Unit*>(unit), enter_set, leave_set);
 }
 
+void CrosslinkAOI::RemoveUnit(const int id) {
+  AOI::Unit* unit = get_unit(id);
+  const AOI::UnitSet& subscribe_set = unit->subscribe_set;
+  NotifyLeave(unit, subscribe_set);
+
+  x_list_->EraseAndDelete(reinterpret_cast<Unit*>(unit)->x_skip_node);
+  y_list_->EraseAndDelete(reinterpret_cast<Unit*>(unit)->y_skip_node);
+
+  AOI::RemoveUnit(id);
+}
+
 AOI::UnitSet CrosslinkAOI::FindNearbyUnit(AOI::Unit* unit,
                                           const float range) const {
   AOI::UnitSet x_set;
-  auto x_for_func = [&](Unit* const other) {
-    if (abs(unit->x - other->x) < 1e-6f) {
-      x_set.insert(reinterpret_cast<AOI::Unit*>(other));
+  auto x_for_func = [&](const Unit* other) {
+    if (fabs(unit->x - other->x) < range) {
+      x_set.insert(reinterpret_cast<AOI::Unit*>(const_cast<Unit*>(other)));
       return true;
     }
     return false;
   };
-  x_list_->ForeachForward(reinterpret_cast<Unit*>(unit)->x_skip_node->nexts[0],
-                          x_for_func);
-  x_list_->ForeachBackward(reinterpret_cast<Unit*>(unit)->x_skip_node->prevs[0],
-                           x_for_func);
+
+  SkipList::SkipNode* x_skip_node = reinterpret_cast<Unit*>(unit)->x_skip_node;
+  x_list_->ForeachForward(x_list_->Next(x_skip_node), x_for_func);
+  x_list_->ForeachBackward(x_list_->Prev(x_skip_node), x_for_func);
 
   AOI::UnitSet res_set;
-  auto y_for_func = [&](Unit* const other) {
-    if (x_set.find(other) != x_set.end() && abs(unit->y - other->y) < 1e-6f) {
-      res_set.insert(reinterpret_cast<AOI::Unit*>(other));
+  auto y_for_func = [&](const Unit* other) {
+    if (x_set.find(const_cast<Unit*>(other)) != x_set.end() &&
+        fabs(unit->y - other->y) < range) {
+      res_set.insert(reinterpret_cast<AOI::Unit*>(const_cast<Unit*>(other)));
       return true;
     }
     return false;
   };
 
-  y_list_->ForeachForward(reinterpret_cast<Unit*>(unit)->y_skip_node->nexts[0],
-                          y_for_func);
-  y_list_->ForeachBackward(reinterpret_cast<Unit*>(unit)->y_skip_node->nexts[0],
-                           y_for_func);
+  SkipList::SkipNode* y_skip_node = reinterpret_cast<Unit*>(unit)->y_skip_node;
+  y_list_->ForeachForward(y_list_->Next(y_skip_node), y_for_func);
+  y_list_->ForeachBackward(y_list_->Prev(y_skip_node), y_for_func);
   return res_set;
+}
+
+void CrosslinkAOI::SkipList::Dump() {
+  SkipNode* p = head_;
+  while (p != nullptr) {
+    if (p != head_ && p != tail_) {
+      Log("level=%d,id=%d,x=%f,y=%f -> ", p->level, p->data->id, p->data->x,
+          p->data->y);
+    } else {
+      Log("level=%d, -> ", p->level);
+    }
+
+    p = p->nexts[0];
+  }
+  Log("%s", "\n");
 }

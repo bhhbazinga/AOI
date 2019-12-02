@@ -17,23 +17,16 @@ class CrosslinkAOI : public AOI {
 
   ~CrosslinkAOI() override;
 
-  inline AOI::Unit* AddUnit(const int id, const float x,
-                            const float y) override;
+  void AddUnit(const int id, const float x, const float y) override;
   void UpdateUnit(const int id, const float x, const float y) override;
-  void RemoveUnit(const int id) override {
-    AOI::Unit* unit = get_unit(id);
-    const AOI::UnitSet& subscribe_set = unit->subscribe_set;
-    NotifyLeave(unit, subscribe_set);
-
-    AOI::RemoveUnit(id);
-  }
+  void RemoveUnit(const int id) override;
 
  protected:
-  inline AOI::UnitSet FindNearbyUnit(AOI::Unit*,
-                                     const float range) const override;
+  AOI::UnitSet FindNearbyUnit(AOI::Unit*, const float range) const override;
 
  private:
   AOI::Unit* NewUnit(const int id, const float x, const float y) override;
+  void DeleteUnit(AOI::Unit* unit) override;
 
   SkipList* x_list_;
   SkipList* y_list_;
