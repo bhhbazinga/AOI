@@ -1,12 +1,12 @@
 #ifndef AOI_H
 #define AOI_H
 
+#include <cassert>
 #include <cstdio>
 #include <functional>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
-#include <cassert>
 
 const float kDefaultVisibleRange = 64;
 
@@ -14,23 +14,9 @@ class AOI {
  public:
   struct Unit;
 
-  typedef std::function<void(int, int)> Callback;
   typedef std::unordered_set<Unit*> UnitSet;
   struct Unit {
-    Unit(int id_, float x_, float y_, Callback enter_callback_,
-         Callback leave_callback_)
-        : id(id_),
-          x(x_),
-          y(y_),
-          enter_callback(enter_callback_),
-          leave_callback(leave_callback_) {}
-
-    Unit(int id_, float x_, float y_)
-        : id(id_),
-          x(x_),
-          y(y_),
-          enter_callback(nullptr),
-          leave_callback(nullptr) {}
+    Unit(int id_, float x_, float y_) : id(id_), x(x_), y(y_) {}
 
     ~Unit(){};
 
@@ -40,15 +26,26 @@ class AOI {
     int id;
     float x;
     float y;
-    Callback enter_callback;
-    Callback leave_callback;
     UnitSet subscribe_set;
   };
 
  public:
-  AOI(const float width, const float height,
-      const float visible_range = kDefaultVisibleRange)
-      : width_(width), height_(height), visible_range_(visible_range) {}
+  typedef std::function<void(int, int)> Callback;
+
+  AOI(const float width, const float height, Callback enter_callback,
+      Callback leave_callback, const float visible_range = kDefaultVisibleRange)
+      : width_(width),
+        height_(height),
+        enter_callback_(enter_callback),
+        leave_callback_(leave_callback),
+        visible_range_(visible_range) {
+    assert(width_ >= 0);
+    assert(height_ >= 0);
+    assert(visible_range >= 0);
+
+    assert(nullptr != enter_callback);
+    assert(nullptr != leave_callback);
+  }
 
   virtual ~AOI() {
     for (const auto& pair : unit_map_) {
@@ -72,12 +69,11 @@ class AOI {
 
   // Add unit to AOI
   // id is a custom integer
-  virtual Unit* AddUnit(int id, float x, float y, Callback enter_callback,
-                        Callback leave_callback) {
+  virtual Unit* AddUnit(int id, float x, float y) {
     assert(x <= width_ && y <= height_);
     assert(unit_map_.find(id) == unit_map_.end());
 
-    Unit* unit = new Unit(id, x, y, enter_callback, leave_callback);
+    Unit* unit = new Unit(id, x, y);
     unit_map_.insert(std::pair(unit->id, unit));
     return unit;
   };
@@ -98,6 +94,17 @@ class AOI {
     for (const auto& unit : unit_set) {
       id_set.insert(unit->id);
     }
+    return id_set;
+  };
+
+  // Find the ids of units in the subscribe set of given id
+  std::unordered_set<int> GetSubScribeSet(int id) const {
+    Unit* unit = get_unit(id);
+    UnitSet subscribe_set = unit->subscribe_set;
+    std::unordered_set<int> id_set;
+    for (const auto& unit : subscribe_set) {
+      id_set.insert(unit->id);
+    } 
     return id_set;
   };
 
@@ -137,22 +144,24 @@ class AOI {
 
   void NotifyEnter(Unit* unit, const UnitSet& enter_set) const {
     for (const auto& other : enter_set) {
-      other->enter_callback(other->id, unit->id);
+      enter_callback_(other->id, unit->id);
       other->Subscribe(unit);
-      unit->enter_callback(unit->id, other->id);
+      enter_callback_(unit->id, other->id);
       unit->Subscribe(other);
     }
   }
 
   void NotifyLeave(Unit* unit, const UnitSet& leave_set) const {
     for (const auto& other : leave_set) {
-      other->leave_callback(other->id, unit->id);
+      leave_callback_(other->id, unit->id);
       other->UnSubscribe(unit);
     }
   }
 
   const float width_;
   const float height_;
+  Callback enter_callback_;
+  Callback leave_callback_;
   const float visible_range_;
 
  private:

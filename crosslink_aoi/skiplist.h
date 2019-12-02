@@ -13,10 +13,8 @@ const int kMaxLevel = 14;
 
 template <typename T, typename Comparator = std::less<T>>
 class SkipList {
- private:
-  class Node;
-
  public:
+  class Node;
   class Iterator;
 
   SkipList() : head_(new Node(kMaxLevel)), compare_() {
@@ -50,6 +48,12 @@ class SkipList {
     InsertNode(new_node);
   }
 
+  // Find the first node whose data is greater than or equal to the data of given node,
+  // then insert the new node before it.
+  void Insert(Node* const new_node) {
+    InsertNode(new_node);
+  }
+
   // Find the first node whose data is greater than the given data.
   // If success return the iterator, else return the end iterator.
   Iterator FindFirstGreater(const T& data) const {
@@ -65,8 +69,8 @@ class SkipList {
   }
 
   // Delete the first node whose data is equals to give data
-  // If success return true else return false
-  bool Erase(const T& data);
+  // If success return the node else return nullptr
+  Node* Erase(const T& data);
 
   Iterator Begin() const { return Iterator(head_->nexts[0]); }
   Iterator End() const { return Iterator(nullptr); }
@@ -191,14 +195,10 @@ SkipList<T, Comparator>::FindNodeFirstGreaterOrEquals(const T& data,
 }
 
 template <typename T, typename Comparator>
-bool SkipList<T, Comparator>::Erase(const T& data) {
+typename SkipList<T, Comparator>::Node* SkipList<T, Comparator>::Erase(const T& data) {
   Node* prevs[kMaxLevel];
 
   Iterator it = Find(data, prevs);
-  if (it == End()) {
-    return false;
-  }
-
   Node* erase_node = it.get_node();
   int erase_level = erase_node->level;
   for (int l = 0; l < erase_level; ++l) {
@@ -206,8 +206,7 @@ bool SkipList<T, Comparator>::Erase(const T& data) {
     prevs[l]->nexts[l] = erase_node->nexts[l];
   }
 
-  delete erase_node;
-  return true;
+  return erase_node;
 }
 
 template <typename T, typename Comparator>

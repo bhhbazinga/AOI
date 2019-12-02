@@ -41,52 +41,43 @@ scene:
 ----------------------------------------------------------------------
 
 crosslink_aoi:
-[CrosslinkAOI]:1000 unit add,timespan=38ms
-[CrosslinkAOI]:1000 unit update,timespan=86ms
-[CrosslinkAOI]:1000 unit remove,timespan=3ms
+[CrosslinkAOI]:1000 unit add,timespan=56ms
+[CrosslinkAOI]:1000 unit update,timespan=87ms
+[CrosslinkAOI]:1000 unit remove,timespan=4ms
 ----------------------------------------------------------------------
-[CrosslinkAOI]:2000 unit add,timespan=134ms
-[CrosslinkAOI]:2000 unit update,timespan=391ms
-[CrosslinkAOI]:2000 unit remove,timespan=23ms
+[CrosslinkAOI]:2000 unit add,timespan=133ms
+[CrosslinkAOI]:2000 unit update,timespan=359ms
+[CrosslinkAOI]:2000 unit remove,timespan=20ms
 ----------------------------------------------------------------------
-[CrosslinkAOI]:3000 unit add,timespan=350ms
-[CrosslinkAOI]:3000 unit update,timespan=983ms
-[CrosslinkAOI]:3000 unit remove,timespan=85ms
+[CrosslinkAOI]:3000 unit add,timespan=308ms
+[CrosslinkAOI]:3000 unit update,timespan=934ms
+[CrosslinkAOI]:3000 unit remove,timespan=79ms
 ----------------------------------------------------------------------
-[CrosslinkAOI]:4000 unit add,timespan=601ms
-[CrosslinkAOI]:4000 unit update,timespan=2022ms
-[CrosslinkAOI]:4000 unit remove,timespan=208ms
+[CrosslinkAOI]:4000 unit add,timespan=565ms
+[CrosslinkAOI]:4000 unit update,timespan=1832ms
+[CrosslinkAOI]:4000 unit remove,timespan=188ms
 ----------------------------------------------------------------------
-[CrosslinkAOI]:5000 unit add,timespan=977ms
-[CrosslinkAOI]:5000 unit update,timespan=3383ms
-[CrosslinkAOI]:5000 unit remove,timespan=357ms
+[CrosslinkAOI]:5000 unit add,timespan=931ms
+[CrosslinkAOI]:5000 unit update,timespan=3139ms
+[CrosslinkAOI]:5000 unit remove,timespan=362ms
 ----------------------------------------------------------------------
-[CrosslinkAOI]:6000 unit add,timespan=1430ms
-[CrosslinkAOI]:6000 unit update,timespan=5194ms
-[CrosslinkAOI]:6000 unit remove,timespan=563ms
+[CrosslinkAOI]:6000 unit add,timespan=1338ms
+[CrosslinkAOI]:6000 unit update,timespan=4668ms
+[CrosslinkAOI]:6000 unit remove,timespan=506ms
 ----------------------------------------------------------------------
-[CrosslinkAOI]:7000 unit add,timespan=2018ms
-[CrosslinkAOI]:7000 unit update,timespan=8034ms
-[CrosslinkAOI]:7000 unit remove,timespan=910ms
+[CrosslinkAOI]:7000 unit add,timespan=1890ms
+[CrosslinkAOI]:7000 unit update,timespan=7298ms
+[CrosslinkAOI]:7000 unit remove,timespan=782ms
 ----------------------------------------------------------------------
-[CrosslinkAOI]:8000 unit add,timespan=2916ms
-[CrosslinkAOI]:8000 unit update,timespan=12254ms
-[CrosslinkAOI]:8000 unit remove,timespan=1254ms
+[CrosslinkAOI]:8000 unit add,timespan=2542ms
+[CrosslinkAOI]:8000 unit update,timespan=10607ms
+[CrosslinkAOI]:8000 unit remove,timespan=1034ms
 ----------------------------------------------------------------------
-[CrosslinkAOI]:9000 unit add,timespan=3619ms
-[CrosslinkAOI]:9000 unit update,timespan=16134ms
-[CrosslinkAOI]:9000 unit remove,timespan=1580ms
+[CrosslinkAOI]:9000 unit add,timespan=3268ms
+[CrosslinkAOI]:9000 unit update,timespan=13236ms
+[CrosslinkAOI]:9000 unit remove,timespan=1385ms
 ----------------------------------------------------------------------
-[CrosslinkAOI]:10000 unit add,timespan=4387ms
-[CrosslinkAOI]:10000 unit update,timespan=19510ms
-[CrosslinkAOI]:10000 unit remove,timespan=1984ms
+[CrosslinkAOI]:10000 unit add,timespan=4037ms
+[CrosslinkAOI]:10000 unit update,timespan=17015ms
+[CrosslinkAOI]:10000 unit remove,timespan=1795ms
 ----------------------------------------------------------------------
-
-
-
-
-
-
-
-
-

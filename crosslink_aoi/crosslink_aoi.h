@@ -8,12 +8,12 @@
 class CrosslinkAOI : public AOI {
  public:
   CrosslinkAOI(const float width, const float height,
+               AOI::Callback enter_callback, AOI::Callback leave_callback,
                const float visible_range = kDefaultVisibleRange)
-      : AOI(width, height, visible_range) {}
+      : AOI(width, height, enter_callback, leave_callback, visible_range) {}
   ~CrosslinkAOI() override {}
 
-  AOI::Unit* AddUnit(int id, float x, float y, AOI::Callback enter_callback_,
-                     AOI::Callback leave_callback_) override;
+  AOI::Unit* AddUnit(int id, float x, float y) override;
   void UpdateUnit(int id, float x, float y) override;
   void RemoveUnit(int id) override;
 

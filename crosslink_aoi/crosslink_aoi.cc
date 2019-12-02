@@ -1,10 +1,8 @@
 #include "crosslink_aoi.h"
 
-AOI::Unit* CrosslinkAOI::AddUnit(int id, float x, float y,
-                                 AOI::Callback enter_callback,
-                                 AOI::Callback leave_callback) {
+AOI::Unit* CrosslinkAOI::AddUnit(int id, float x, float y) {
   AOI::Unit* unit =
-      AOI::AddUnit(id, x, y, enter_callback, leave_callback);
+      AOI::AddUnit(id, x, y);
   x_list_.Insert(unit);
   y_list_.Insert(unit);
 
@@ -19,12 +17,12 @@ void CrosslinkAOI::UpdateUnit(int id, float x, float y) {
   AOI::UpdateUnit(id, x, y);
   AOI::Unit* unit = get_unit(id);
   const AOI::UnitSet& old_set = unit->subscribe_set;
-  x_list_.Erase(unit);
-  y_list_.Erase(unit);
+  auto x_node = x_list_.Erase(unit);
+  auto y_node = y_list_.Erase(unit);
   unit->x = x;
   unit->y = y;
-  x_list_.Insert(unit);
-  y_list_.Insert(unit);
+  x_list_.Insert(x_node);
+  y_list_.Insert(y_node);
 
   AOI::UnitSet new_set = FindNearbyUnit(unit, visible_range_);
   AOI::UnitSet move_set = Intersection(old_set, new_set);
