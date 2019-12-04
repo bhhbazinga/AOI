@@ -6,16 +6,15 @@
 #include <functional>
 #include <unordered_map>
 #include <unordered_set>
-#include <vector>
 
 class AOI {
  public:
   struct Unit;
 
+  typedef int UnitID;
   typedef std::unordered_set<Unit*> UnitSet;
   struct Unit {
-    Unit(const int id_, const float x_, const float y_)
-        : id(id_), x(x_), y(y_) {}
+    Unit(UnitID id_, float x_, float y_) : id(id_), x(x_), y(y_) {}
 
     ~Unit(){};
 
@@ -26,7 +25,7 @@ class AOI {
       subscribe_set.erase(const_cast<Unit*>(other));
     }
 
-    const int id;
+    UnitID id;
     float x;
     float y;
     UnitSet subscribe_set;
@@ -35,8 +34,8 @@ class AOI {
  public:
   typedef std::function<void(int, int)> Callback;
 
-  AOI(const float width, const float height, const float visible_range,
-      Callback enter_callback, Callback leave_callback)
+  AOI(float width, float height, float visible_range, Callback enter_callback,
+      Callback leave_callback)
       : width_(width),
         height_(height),
         visible_range_(visible_range),
@@ -59,17 +58,13 @@ class AOI {
 
   // Update when unit moved
   // id is a custom integer
-  virtual void UpdateUnit(const int id, const float x, const float y) {
-    (void)id;
-    assert(x <= width_);
-    assert(y <= width_);
-  };
+  virtual void UpdateUnit(UnitID id, float x, float y) = 0;
 
   // Add unit to AOI
   // id is a custom integer
-  virtual void AddUnit(const int id, const float x, const float y) {
-    assert(x <= width_ && y <= height_);
+  virtual void AddUnit(UnitID id, float x, float y) {
     assert(unit_map_.find(id) == unit_map_.end());
+    ValidatePosition(x, y);
 
     Unit* unit = NewUnit(id, x, y);
     unit_map_.insert(std::pair(unit->id, unit));
@@ -77,14 +72,14 @@ class AOI {
 
   // Remove unit from AOI
   // id is a custom integer
-  virtual void RemoveUnit(int id) {
+  virtual void RemoveUnit(UnitID id) {
     Unit* unit = unit_map_[id];
     unit_map_.erase(id);
     DeleteUnit(unit);
   };
 
   // Find the ids of units in range near the given id, and exclude id itself
-  std::unordered_set<int> FindNearbyUnit(int id, const float range) const {
+  std::unordered_set<int> FindNearbyUnit(UnitID id, const float range) const {
     Unit* unit = get_unit(id);
     UnitSet unit_set = FindNearbyUnit(unit, range);
     std::unordered_set<int> id_set;
@@ -95,7 +90,7 @@ class AOI {
   };
 
   // Find the ids of units in the subscribe set of given id
-  std::unordered_set<int> GetSubScribeSet(int id) const {
+  std::unordered_set<int> GetSubScribeSet(UnitID id) const {
     Unit* unit = get_unit(id);
     UnitSet subscribe_set = unit->subscribe_set;
     std::unordered_set<int> id_set;
@@ -110,10 +105,13 @@ class AOI {
 
  protected:
   virtual UnitSet FindNearbyUnit(Unit* unit, const float range) const = 0;
-  virtual Unit* NewUnit(const int id, const float x, const float y) = 0;
+  virtual Unit* NewUnit(UnitID id, float x, float y) = 0;
   virtual void DeleteUnit(Unit* unit) = 0;
 
-  Unit* get_unit(int id) const { return unit_map_[id]; }
+  void ValidatePosition(float x, float y) {
+    assert(x <= width_ && y <= height_);
+  }
+  Unit* get_unit(UnitID id) const { return unit_map_[id]; }
 
   UnitSet Intersection(const UnitSet& set, const UnitSet& other) const {
     UnitSet res;
@@ -157,9 +155,9 @@ class AOI {
     }
   }
 
-  const float width_;
-  const float height_;
-  const float visible_range_;
+  float width_;
+  float height_;
+  float visible_range_;
   mutable std::unordered_map<int, Unit*> unit_map_;
 
  private:

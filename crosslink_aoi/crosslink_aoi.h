@@ -11,21 +11,21 @@ class CrosslinkAOI : public AOI {
   struct Unit;
 
  public:
-  CrosslinkAOI(const float width, const float height, const float visible_range,
+  CrosslinkAOI(float width, float height, float visible_range,
                const AOI::Callback& enter_callback,
                const AOI::Callback& leave_callback);
 
   ~CrosslinkAOI() override;
 
-  void AddUnit(const int id, const float x, const float y) override;
-  void UpdateUnit(const int id, const float x, const float y) override;
-  void RemoveUnit(const int id) override;
+  void AddUnit(UnitID id, float x, float y) override;
+  void UpdateUnit(UnitID id, float x, float y) override;
+  void RemoveUnit(UnitID id) override;
 
  protected:
   AOI::UnitSet FindNearbyUnit(AOI::Unit*, const float range) const override;
 
  private:
-  AOI::Unit* NewUnit(const int id, const float x, const float y) override;
+  AOI::Unit* NewUnit(UnitID id, float x, float y) override;
   void DeleteUnit(AOI::Unit* unit) override;
 
   SkipList* x_list_;

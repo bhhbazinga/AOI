@@ -7,11 +7,6 @@
 #include <functional>
 #include <random>
 
-#define Log(fmt, ...)                  \
-  do {                                 \
-    fprintf(stderr, fmt, __VA_ARGS__); \
-  } while (0)
-
 // It's almost guaranteed to be logn if the maximum number of nodes range in 0
 // to 2^14
 const int kMaxLevel = 14;
@@ -99,8 +94,6 @@ class CrosslinkAOI::SkipList {
   SkipNode* Next(const SkipNode* node) const { return node->nexts[0]; }
 
   SkipNode* Prev(const SkipNode* node) const { return node->prevs[0]; }
-
-  void Dump();
 
   typedef std::function<bool(const Unit* data)> ForeachFunction;
   void ForeachForward(const SkipNode* begin_node,
@@ -207,14 +200,14 @@ void CrosslinkAOI::SkipList::ForeachBackward(
 }
 
 struct CrosslinkAOI::Unit : AOI::Unit {
-  Unit(const int id, const float x, const float y) : AOI::Unit(id, x, y) {}
+  Unit(UnitID id, float x, float y) : AOI::Unit(id, x, y) {}
   ~Unit() {}
 
   SkipList::SkipNode* x_skip_node;
   SkipList::SkipNode* y_skip_node;
 };
 
-AOI::Unit* CrosslinkAOI::NewUnit(const int id, const float x, const float y) {
+AOI::Unit* CrosslinkAOI::NewUnit(UnitID id, float x, float y) {
   return reinterpret_cast<AOI::Unit*>(new Unit(id, x, y));
 }
 
@@ -222,8 +215,7 @@ void CrosslinkAOI::DeleteUnit(AOI::Unit* unit) {
   delete reinterpret_cast<Unit*>(unit);
 }
 
-CrosslinkAOI::CrosslinkAOI(const float width, const float height,
-                           const float visible_range,
+CrosslinkAOI::CrosslinkAOI(float width, float height, float visible_range,
                            const AOI::Callback& enter_callback,
                            const AOI::Callback& leave_callback)
     : AOI(width, height, visible_range, enter_callback, leave_callback),
@@ -240,7 +232,7 @@ CrosslinkAOI::~CrosslinkAOI() {
   }
 }
 
-void CrosslinkAOI::AddUnit(int id, float x, float y) {
+void CrosslinkAOI::AddUnit(UnitID id, float x, float y) {
   AOI::AddUnit(id, x, y);
   AOI::Unit* unit = get_unit(id);
   reinterpret_cast<Unit*>(unit)->x_skip_node =
@@ -254,10 +246,10 @@ void CrosslinkAOI::AddUnit(int id, float x, float y) {
   unit->subscribe_set = std::move(enter_set);
 }
 
-void CrosslinkAOI::UpdateUnit(const int id, const float x, const float y) {
-  AOI::UpdateUnit(id, x, y);
-  Unit* unit = reinterpret_cast<Unit*>(get_unit(id));
+void CrosslinkAOI::UpdateUnit(UnitID id, float x, float y) {
+  ValidatePosition(x, y);
 
+  Unit* unit = reinterpret_cast<Unit*>(get_unit(id));
   SkipList::SkipNode* x_skip_node = unit->x_skip_node;
   SkipList::SkipNode* y_skip_node = unit->y_skip_node;
   x_list_->Erase(x_skip_node);
@@ -278,7 +270,7 @@ void CrosslinkAOI::UpdateUnit(const int id, const float x, const float y) {
   NotifyAll(reinterpret_cast<AOI::Unit*>(unit), enter_set, leave_set);
 }
 
-void CrosslinkAOI::RemoveUnit(const int id) {
+void CrosslinkAOI::RemoveUnit(UnitID id) {
   AOI::Unit* unit = get_unit(id);
   const AOI::UnitSet& subscribe_set = unit->subscribe_set;
   NotifyLeave(unit, subscribe_set);
@@ -318,19 +310,4 @@ AOI::UnitSet CrosslinkAOI::FindNearbyUnit(AOI::Unit* unit,
   y_list_->ForeachForward(y_list_->Next(y_skip_node), y_for_func);
   y_list_->ForeachBackward(y_list_->Prev(y_skip_node), y_for_func);
   return res_set;
-}
-
-void CrosslinkAOI::SkipList::Dump() {
-  SkipNode* p = head_;
-  while (p != nullptr) {
-    if (p != head_ && p != tail_) {
-      Log("level=%d,id=%d,x=%f,y=%f -> ", p->level, p->data->id, p->data->x,
-          p->data->y);
-    } else {
-      Log("level=%d, -> ", p->level);
-    }
-
-    p = p->nexts[0];
-  }
-  Log("%s", "\n");
 }

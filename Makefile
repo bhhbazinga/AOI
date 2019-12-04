@@ -1,15 +1,18 @@
 CXX = g++
-CXXFLAGS = -Wall -Wextra -std=c++17 -g -O3
+CXXFLAGS = -Wall -Werror=return-type -Wextra -std=c++17 -g -O3
 # -fsanitize=address
 EXEC = test
 
 all: $(EXEC)
 
-$(EXEC): test.cc crosslink_aoi.o
-	$(CXX) $(CXXFLAGS) -o $(EXEC) test.cc crosslink_aoi.o -I./
+$(EXEC): test.cc crosslink_aoi.o quadtree_aoi.o
+	$(CXX) $(CXXFLAGS) -o $(EXEC) test.cc crosslink_aoi.o quadtree_aoi.o -I./
 
 crosslink_aoi.o:crosslink_aoi/crosslink_aoi.cc crosslink_aoi/crosslink_aoi.h  aoi.h
 	$(CXX) $(CXXFLAGS) -o crosslink_aoi.o -c crosslink_aoi/crosslink_aoi.cc -I./
+
+quadtree_aoi.o:quadtree_aoi/quadtree_aoi.cc quadtree_aoi/quadtree_aoi.h  aoi.h
+	$(CXX) $(CXXFLAGS) -o quadtree_aoi.o -c quadtree_aoi/quadtree_aoi.cc -I./
 
 .Phony: clean
 

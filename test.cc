@@ -1,4 +1,5 @@
 #include "crosslink_aoi/crosslink_aoi.h"
+#include "quadtree_aoi/quadtree_aoi.h"
 
 #include <chrono>
 #include <vector>
@@ -32,6 +33,10 @@ void CrosslinkAOIUsage() {
   cl_aoi.UpdateUnit(1, 60, 60);
   cl_aoi.UpdateUnit(1, 4, 4);
   cl_aoi.RemoveUnit(1);
+}
+
+void QuadTreeAOIUsage() {
+  QuadTreeAOI qt_aoi(64, 64, 4, enter_callback, leave_callback);
 }
 
 void TestCrosslinkAOI(const int max_units) {
