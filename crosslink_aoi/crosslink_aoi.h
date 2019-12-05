@@ -22,7 +22,8 @@ class CrosslinkAOI : public AOI {
   void RemoveUnit(UnitID id) override;
 
  protected:
-  AOI::UnitSet FindNearbyUnit(AOI::Unit*, const float range) const override;
+  AOI::UnitSet FindNearbyUnit(const AOI::Unit* unit,
+                              float range) const override;
 
  private:
   AOI::Unit* NewUnit(UnitID id, float x, float y) override;

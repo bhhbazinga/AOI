@@ -13,6 +13,7 @@ class AOI {
 
   typedef int UnitID;
   typedef std::unordered_set<Unit*> UnitSet;
+  typedef std::unordered_map<int, Unit*> UnitMap;
   struct Unit {
     Unit(UnitID id_, float x_, float y_) : id(id_), x(x_), y(y_) {}
 
@@ -60,26 +61,16 @@ class AOI {
   // id is a custom integer
   virtual void UpdateUnit(UnitID id, float x, float y) = 0;
 
-  // Add unit to AOI
-  // id is a custom integer
-  virtual void AddUnit(UnitID id, float x, float y) {
-    assert(unit_map_.find(id) == unit_map_.end());
-    ValidatePosition(x, y);
-
-    Unit* unit = NewUnit(id, x, y);
-    unit_map_.insert(std::pair(unit->id, unit));
-  };
-
   // Remove unit from AOI
   // id is a custom integer
-  virtual void RemoveUnit(UnitID id) {
-    Unit* unit = unit_map_[id];
-    unit_map_.erase(id);
-    DeleteUnit(unit);
-  };
+  virtual void RemoveUnit(UnitID id) = 0;
+
+  // Add unit to AOI
+  // id is a custom integer
+  virtual void AddUnit(UnitID id, float x, float y) = 0;
 
   // Find the ids of units in range near the given id, and exclude id itself
-  std::unordered_set<int> FindNearbyUnit(UnitID id, const float range) const {
+  std::unordered_set<int> FindNearbyUnit(UnitID id, float range) const {
     Unit* unit = get_unit(id);
     UnitSet unit_set = FindNearbyUnit(unit, range);
     std::unordered_set<int> id_set;
@@ -104,14 +95,30 @@ class AOI {
   const float& get_height() const { return height_; }
 
  protected:
-  virtual UnitSet FindNearbyUnit(Unit* unit, const float range) const = 0;
+  virtual UnitSet FindNearbyUnit(const Unit* unit, float range) const = 0;
   virtual Unit* NewUnit(UnitID id, float x, float y) = 0;
   virtual void DeleteUnit(Unit* unit) = 0;
 
   void ValidatePosition(float x, float y) {
     assert(x <= width_ && y <= height_);
   }
+
   Unit* get_unit(UnitID id) const { return unit_map_[id]; }
+
+  const std::unordered_map<int, Unit*>& get_unit_map() const {
+    return unit_map_;
+  }
+
+  std::vector<UnitID> get_unit_ids() const {
+    const AOI::UnitMap& unit_map = get_unit_map();
+    std::vector<UnitID> unit_ids(unit_map.size());
+
+    int i = 0;
+    for (const auto& pair : unit_map) {
+      unit_ids[i++] = pair.first;
+    }
+    return unit_ids;
+  }
 
   UnitSet Intersection(const UnitSet& set, const UnitSet& other) const {
     UnitSet res;
@@ -155,12 +162,38 @@ class AOI {
     }
   }
 
+  void OnAddUnit(Unit* unit) {
+    unit_map_.insert(std::pair(unit->id, unit));
+
+    AOI::UnitSet enter_set = FindNearbyUnit(unit, visible_range_);
+    NotifyEnter(unit, enter_set);
+    unit->subscribe_set = std::move(enter_set);
+  }
+
+  void OnUpdateUnit(Unit* unit) {
+    const AOI::UnitSet& old_set = unit->subscribe_set;
+    AOI::UnitSet new_set =
+        FindNearbyUnit(reinterpret_cast<AOI::Unit*>(unit), visible_range_);
+    AOI::UnitSet move_set = Intersection(old_set, new_set);
+    AOI::UnitSet enter_set = Difference(new_set, move_set);
+    AOI::UnitSet leave_set = Difference(old_set, new_set);
+    unit->subscribe_set = std::move(new_set);
+
+    NotifyAll(reinterpret_cast<AOI::Unit*>(unit), enter_set, leave_set);
+  }
+
+  void OnRemoveUnit(Unit* unit) {
+    const AOI::UnitSet& subscribe_set = unit->subscribe_set;
+    NotifyLeave(unit, subscribe_set);
+    unit_map_.erase(unit->id);
+    DeleteUnit(unit);
+  }
+
+ private:
   float width_;
   float height_;
   float visible_range_;
-  mutable std::unordered_map<int, Unit*> unit_map_;
-
- private:
+  mutable UnitMap unit_map_;
   Callback enter_callback_;
   Callback leave_callback_;
 };

@@ -223,27 +223,23 @@ CrosslinkAOI::CrosslinkAOI(float width, float height, float visible_range,
       y_list_(new SkipList(ComparatorY())) {}
 
 CrosslinkAOI::~CrosslinkAOI() {
+  std::vector<UnitID> unit_ids = get_unit_ids();
+  for (auto id : unit_ids) {
+    RemoveUnit(id);
+  }
+
   delete x_list_;
   delete y_list_;
-
-  for (const auto& pair : unit_map_) {
-    AOI::Unit* unit = pair.second;
-    delete reinterpret_cast<Unit*>(unit);
-  }
 }
 
 void CrosslinkAOI::AddUnit(UnitID id, float x, float y) {
-  AOI::AddUnit(id, x, y);
-  AOI::Unit* unit = get_unit(id);
-  reinterpret_cast<Unit*>(unit)->x_skip_node =
-      x_list_->Insert(reinterpret_cast<Unit*>(unit));
-  reinterpret_cast<Unit*>(unit)->y_skip_node =
-      y_list_->Insert(reinterpret_cast<Unit*>(unit));
+  ValidatePosition(x, y);
 
-  AOI::UnitSet enter_set = FindNearbyUnit(unit, visible_range_);
-  NotifyEnter(unit, enter_set);
+  Unit* unit = reinterpret_cast<Unit*>(NewUnit(id, x, y));
+  unit->x_skip_node = x_list_->Insert(unit);
+  unit->y_skip_node = y_list_->Insert(unit);
 
-  unit->subscribe_set = std::move(enter_set);
+  OnAddUnit(unit);
 }
 
 void CrosslinkAOI::UpdateUnit(UnitID id, float x, float y) {
@@ -259,40 +255,31 @@ void CrosslinkAOI::UpdateUnit(UnitID id, float x, float y) {
   x_list_->Insert(x_skip_node);
   y_list_->Insert(y_skip_node);
 
-  const AOI::UnitSet& old_set = unit->subscribe_set;
-  AOI::UnitSet new_set =
-      FindNearbyUnit(reinterpret_cast<AOI::Unit*>(unit), visible_range_);
-  AOI::UnitSet move_set = Intersection(old_set, new_set);
-  AOI::UnitSet enter_set = Difference(new_set, move_set);
-  AOI::UnitSet leave_set = Difference(old_set, new_set);
-  unit->subscribe_set = std::move(new_set);
-
-  NotifyAll(reinterpret_cast<AOI::Unit*>(unit), enter_set, leave_set);
+  OnUpdateUnit(unit);
 }
 
 void CrosslinkAOI::RemoveUnit(UnitID id) {
-  AOI::Unit* unit = get_unit(id);
-  const AOI::UnitSet& subscribe_set = unit->subscribe_set;
-  NotifyLeave(unit, subscribe_set);
+  Unit* unit = reinterpret_cast<Unit*>(get_unit(id));
 
-  x_list_->EraseAndDelete(reinterpret_cast<Unit*>(unit)->x_skip_node);
-  y_list_->EraseAndDelete(reinterpret_cast<Unit*>(unit)->y_skip_node);
+  x_list_->EraseAndDelete(unit->x_skip_node);
+  y_list_->EraseAndDelete(unit->y_skip_node);
 
-  AOI::RemoveUnit(id);
+  OnRemoveUnit(unit);
 }
 
-AOI::UnitSet CrosslinkAOI::FindNearbyUnit(AOI::Unit* unit,
-                                          const float range) const {
+AOI::UnitSet CrosslinkAOI::FindNearbyUnit(const AOI::Unit* unit,
+                                          float range) const {
   AOI::UnitSet x_set;
   auto x_for_func = [&](const Unit* other) {
     if (fabs(unit->x - other->x) < range) {
-      x_set.insert(reinterpret_cast<AOI::Unit*>(const_cast<Unit*>(other)));
+      x_set.insert(const_cast<Unit*>(other));
       return true;
     }
     return false;
   };
 
-  SkipList::SkipNode* x_skip_node = reinterpret_cast<Unit*>(unit)->x_skip_node;
+  SkipList::SkipNode* x_skip_node =
+      reinterpret_cast<Unit*>(const_cast<AOI::Unit*>(unit))->x_skip_node;
   x_list_->ForeachForward(x_list_->Next(x_skip_node), x_for_func);
   x_list_->ForeachBackward(x_list_->Prev(x_skip_node), x_for_func);
 
@@ -300,13 +287,14 @@ AOI::UnitSet CrosslinkAOI::FindNearbyUnit(AOI::Unit* unit,
   auto y_for_func = [&](const Unit* other) {
     if (x_set.find(const_cast<Unit*>(other)) != x_set.end() &&
         fabs(unit->y - other->y) < range) {
-      res_set.insert(reinterpret_cast<AOI::Unit*>(const_cast<Unit*>(other)));
+      res_set.insert(const_cast<Unit*>(other));
       return true;
     }
     return false;
   };
 
-  SkipList::SkipNode* y_skip_node = reinterpret_cast<Unit*>(unit)->y_skip_node;
+  SkipList::SkipNode* y_skip_node =
+      reinterpret_cast<Unit*>(const_cast<AOI::Unit*>(unit))->y_skip_node;
   y_list_->ForeachForward(y_list_->Next(y_skip_node), y_for_func);
   y_list_->ForeachBackward(y_list_->Prev(y_skip_node), y_for_func);
   return res_set;

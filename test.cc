@@ -71,9 +71,10 @@ int main(int argc, char const* argv[]) {
   (void)argv;
 
   CrosslinkAOIUsage();
-  for (int i = 1000; i <= 10000; i += 1000) {
+  for (int i = 1000; i <= 1000; i += 1000) {
     TestCrosslinkAOI(i);
   }
 
+  // int* const* p;
   return 0;
 }
