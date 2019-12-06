@@ -2,7 +2,6 @@
 #define AOI_H
 
 #include <cassert>
-#include <cstdio>
 #include <functional>
 #include <unordered_map>
 #include <unordered_set>
@@ -69,7 +68,7 @@ class AOI {
   // id is a custom integer
   virtual void AddUnit(UnitID id, float x, float y) = 0;
 
-  // Find the ids of units in range near the given id, and exclude id itself
+  // Find units in range near the given id, and exclude id itself
   std::unordered_set<int> FindNearbyUnit(UnitID id, float range) const {
     Unit* unit = get_unit(id);
     UnitSet unit_set = FindNearbyUnit(unit, range);
@@ -103,7 +102,11 @@ class AOI {
     assert(x <= width_ && y <= height_);
   }
 
-  Unit* get_unit(UnitID id) const { return unit_map_[id]; }
+  Unit* get_unit(UnitID id) const {
+    Unit* unit = unit_map_[id];
+    assert(nullptr != unit);
+    return unit;
+  }
 
   const std::unordered_map<int, Unit*>& get_unit_map() const {
     return unit_map_;

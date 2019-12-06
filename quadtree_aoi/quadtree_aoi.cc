@@ -6,6 +6,11 @@
 #include <queue>
 #include <vector>
 
+#define Log(fmt, ...)                  \
+  do {                                 \
+    fprintf(stderr, fmt, __VA_ARGS__); \
+  } while (0)
+
 const int kMaxDegree = 5;
 
 class QuadTreeAOI::QuadTree {
@@ -16,11 +21,11 @@ class QuadTreeAOI::QuadTree {
  public:
   QuadTree(float width, float height)
       : root_(new QuadTreeNode(0, true, 0, 0, width, height, nullptr)) {}
-  ~QuadTree() {}
+  ~QuadTree() { Delete(root_); }
 
-  QuadTreeNode* Insert(const Unit* unit) { return Insert(root_, unit); };
+  void Insert(Unit* unit) { return Insert(root_, unit); };
 
-  void Delete(const Unit* unit);
+  void Delete(Unit* unit);
 
   AOI::UnitSet Search(const Box& box) {
     AOI::UnitSet unit_set;
@@ -64,21 +69,17 @@ class QuadTreeAOI::QuadTree {
           leaf(leaf_),
           box(Box(x1, y1, x2, y2)),
           parent(parent_) {
+      // Log("%sQuadTreeNode\n", ">>>");
       memset(&child_nodes[0], 0, sizeof(child_nodes[0]) * 4);
     }
 
-    ~QuadTreeNode() {}
+    ~QuadTreeNode() {
+      // Log("%s~QuadTreeNode\n", ">>>");
+    }
     QuadTreeNode*& top_left() { return child_nodes[0]; }
     QuadTreeNode*& top_right() { return child_nodes[1]; }
     QuadTreeNode*& bottom_left() { return child_nodes[2]; }
     QuadTreeNode*& bottom_right() { return child_nodes[3]; }
-    void ForEachChilds(std::function<bool(const QuadTreeNode* child)> func) {
-      for (int i = 0; i < 4; ++i) {
-        if (!func(child_nodes[i])) {
-          break;
-        }
-      }
-    }
 
     int depth;
     bool leaf;
@@ -89,8 +90,9 @@ class QuadTreeAOI::QuadTree {
   };
 
  private:
-  QuadTreeNode* Insert(QuadTreeNode* node, const Unit* unit);
+  void Insert(QuadTreeNode* node, Unit* unit);
   void Search(const QuadTreeNode* node, const Box& box, AOI::UnitSet& unit_set);
+  void Delete(QuadTreeNode* node);
 
   QuadTreeNode* const root_;
 };
@@ -102,75 +104,63 @@ struct QuadTreeAOI::Unit : AOI::Unit {
   QuadTree::QuadTreeNode* quad_tree_node;
 };
 
-QuadTreeAOI::QuadTree::QuadTreeNode* QuadTreeAOI::QuadTree::Insert(
-    QuadTreeNode* node, const Unit* unit) {
+void QuadTreeAOI::QuadTree::Insert(QuadTreeNode* node, Unit* unit) {
   AOI::UnitSet& unit_set = node->unit_set;
-  if (node->depth >= kMaxDegree) {
-    // Reach max degree
-    unit_set.insert(const_cast<Unit*>(unit));
-    return node;
-  }
+  QuadTreeNode** child_nodes = node->child_nodes;
 
   if (node->leaf) {
-    if (unit_set.empty()) {
+    if (unit_set.empty() || node->depth >= kMaxDegree) {
       // Have no units
       unit_set.insert(const_cast<Unit*>(unit));
-      return node;
+      unit->quad_tree_node = node;
+      Log("insert, %d(%f,%f), node=%p\n", unit->id, unit->x, unit->y, node);
+      return;
     } else {
-      if (node->leaf) {
-        // Split current node
-        const Box& box = node->box;
-        float mid_x = (box.x1 + box.x2) / 2;
-        float mid_y = (box.y1 + box.y2) / 2;
-        node->top_left() = new QuadTreeNode(node->depth, true, box.x1, mid_y,
-                                            mid_x, box.y2, node);
-        node->top_right() = new QuadTreeNode(node->depth, true, mid_x, mid_y,
-                                             box.x2, box.y2, node);
-        node->bottom_left() = new QuadTreeNode(node->depth, true, box.x1,
-                                               box.y1, mid_x, mid_y, node);
-        node->top_right() = new QuadTreeNode(node->depth, true, mid_x, box.y1,
-                                             box.x2, mid_y, node);
-        node->leaf = false;
-        for (auto unit : unit_set) {
-          // Reinsert current units
-          Insert(node, reinterpret_cast<Unit*>(unit));
-        }
-        unit_set.clear();
+      // Split current node
+      const Box& box = node->box;
+      float mid_x = (box.x1 + box.x2) / 2;
+      float mid_y = (box.y1 + box.y2) / 2;
+      node->top_left() = new QuadTreeNode(node->depth + 1, true, box.x1, mid_y,
+                                          mid_x, box.y2, node);
+      node->top_right() = new QuadTreeNode(node->depth + 1, true, mid_x, mid_y,
+                                           box.x2, box.y2, node);
+      node->bottom_left() = new QuadTreeNode(node->depth + 1, true, box.x1,
+                                             box.y1, mid_x, mid_y, node);
+      node->bottom_right() = new QuadTreeNode(node->depth + 1, true, mid_x,
+                                              box.y1, box.x2, mid_y, node);
+      node->leaf = false;
+      for (auto old_unit : unit_set) {
+        Insert(node, reinterpret_cast<Unit*>(old_unit));
       }
+      unit_set.clear();
     }
   }
 
-  QuadTreeNode** child_nodes = node->child_nodes;
   for (int i = 0; i < 4; ++i) {
     if (child_nodes[i]->box.Contains(unit->x, unit->y)) {
-      return Insert(child_nodes[i], unit);
+      Insert(child_nodes[i], unit);
+      break;
     }
   }
-
-  assert(false);
-  return nullptr;
 }
 
-void QuadTreeAOI::QuadTree::Delete(const Unit* unit) {
+void QuadTreeAOI::QuadTree::Delete(Unit* unit) {
   QuadTreeNode* node = unit->quad_tree_node;
   AOI::UnitSet& unit_set = node->unit_set;
   unit_set.erase(const_cast<Unit*>(unit));
+  unit->quad_tree_node = nullptr;
+}
 
-  QuadTreeNode* parent = node->parent;
+void QuadTreeAOI::QuadTree::Delete(QuadTreeNode* node) {
+  if (nullptr == node) {
+    return;
+  }
+
   QuadTreeNode** child_nodes = node->child_nodes;
-  int size = 0;
   for (int i = 0; i < 4; ++i) {
-    size += child_nodes[i]->unit_set.size();
-    if (size > 1) {
-      return;
-    }
+    Delete(child_nodes[i]);
   }
-
-  // Merge nodes
-  parent->leaf = true;
-  for (int i = 0; i < 4; ++i) {
-    delete child_nodes[i];
-  }
+  delete node;
 }
 
 void QuadTreeAOI::QuadTree::Search(const QuadTreeNode* node, const Box& box,
@@ -179,9 +169,16 @@ void QuadTreeAOI::QuadTree::Search(const QuadTreeNode* node, const Box& box,
     return;
   }
 
-  QuadTreeNode* const* child_nodes = node->child_nodes;
-  for (int i = 0; i < 4; ++i) {
-    Search(child_nodes[i], box, unit_set);
+  if (!node->leaf) {
+    QuadTreeNode* const* child_nodes = node->child_nodes;
+    for (int i = 0; i < 4; ++i) {
+      Search(child_nodes[i], box, unit_set);
+    }
+    return;
+  }
+
+  for (auto unit : node->unit_set) {
+    unit_set.insert(unit);
   }
 }
 
@@ -204,7 +201,7 @@ void QuadTreeAOI::AddUnit(UnitID id, float x, float y) {
   ValidatePosition(x, y);
 
   Unit* unit = reinterpret_cast<Unit*>(NewUnit(id, x, y));
-  unit->quad_tree_node = quad_tree_->Insert(unit);
+  quad_tree_->Insert(unit);
 
   OnAddUnit(unit);
 }
@@ -233,9 +230,11 @@ AOI::UnitSet QuadTreeAOI::FindNearbyUnit(const AOI::Unit* unit,
   float width = get_width();
   float height = get_height();
   QuadTree::Box box(
-      std::min(unit->x - range, 0.0f), std::min(unit->y - range, 0.0f),
+      std::max(unit->x - range, 0.0f), std::max(unit->y - range, 0.0f),
       std::min(unit->x + range, width), std::min(unit->y + range, height));
-  return quad_tree_->Search(box);
+  UnitSet unit_set = quad_tree_->Search(box);
+  unit_set.erase(const_cast<AOI::Unit*>(unit));
+  return unit_set;
 }
 
 AOI::Unit* QuadTreeAOI::NewUnit(UnitID id, float x, float y) {

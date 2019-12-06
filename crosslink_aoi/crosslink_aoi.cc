@@ -2,7 +2,6 @@
 
 #include <algorithm>
 #include <cassert>
-#include <cstdio>
 #include <cstring>
 #include <functional>
 #include <random>
