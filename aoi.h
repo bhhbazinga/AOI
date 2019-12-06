@@ -5,6 +5,8 @@
 #include <functional>
 #include <unordered_map>
 #include <unordered_set>
+#include <set>
+
 
 class AOI {
  public:
@@ -143,12 +145,6 @@ class AOI {
     return res;
   }
 
-  void NotifyAll(Unit* unit, const UnitSet& enter_set,
-                 const UnitSet& leave_set) const {
-    NotifyEnter(unit, enter_set);
-    NotifyLeave(unit, leave_set);
-  }
-
   void NotifyEnter(Unit* unit, const UnitSet& enter_set) const {
     for (const auto& other : enter_set) {
       enter_callback_(other->id, unit->id);
@@ -162,32 +158,35 @@ class AOI {
     for (const auto& other : leave_set) {
       leave_callback_(other->id, unit->id);
       other->UnSubscribe(unit);
+      leave_callback_(unit->id, other->id);
+      unit->UnSubscribe(other);
     }
   }
 
   void OnAddUnit(Unit* unit) {
     unit_map_.insert(std::pair(unit->id, unit));
 
-    AOI::UnitSet enter_set = FindNearbyUnit(unit, visible_range_);
+    UnitSet enter_set = FindNearbyUnit(unit, visible_range_);
     NotifyEnter(unit, enter_set);
     unit->subscribe_set = std::move(enter_set);
   }
 
   void OnUpdateUnit(Unit* unit) {
-    const AOI::UnitSet& old_set = unit->subscribe_set;
-    AOI::UnitSet new_set =
-        FindNearbyUnit(reinterpret_cast<AOI::Unit*>(unit), visible_range_);
-    AOI::UnitSet move_set = Intersection(old_set, new_set);
-    AOI::UnitSet enter_set = Difference(new_set, move_set);
-    AOI::UnitSet leave_set = Difference(old_set, new_set);
+    const UnitSet& old_set = unit->subscribe_set;
+    UnitSet new_set =
+        FindNearbyUnit(reinterpret_cast<Unit*>(unit), visible_range_);
+    UnitSet move_set = Intersection(old_set, new_set);
+    UnitSet enter_set = Difference(new_set, move_set);
+    UnitSet leave_set = Difference(old_set, new_set);
     unit->subscribe_set = std::move(new_set);
 
-    NotifyAll(reinterpret_cast<AOI::Unit*>(unit), enter_set, leave_set);
+    NotifyEnter(reinterpret_cast<Unit*>(unit), enter_set);
+    NotifyLeave(reinterpret_cast<Unit*>(unit), leave_set);
   }
 
   void OnRemoveUnit(Unit* unit) {
-    const AOI::UnitSet& subscribe_set = unit->subscribe_set;
-    NotifyLeave(unit, subscribe_set);
+    const UnitSet& subscribe_set = unit->subscribe_set;
+    NotifyLeave(unit, UnitSet(subscribe_set));
     unit_map_.erase(unit->id);
     DeleteUnit(unit);
   }

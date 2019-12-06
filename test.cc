@@ -27,13 +27,13 @@ void leave_callback(int me, int other) {
 
 template <class AOIImpl>
 void AOIUsage() {
-  AOIImpl aoi(64, 64, 10, enter_callback, leave_callback);
+  AOIImpl aoi(64, 64, 4, enter_callback, leave_callback);
   aoi.AddUnit(1, 1, 1);
-  aoi.AddUnit(2, 1, 1);
-  // aoi.AddUnit(3, 3, 3);
-  aoi.UpdateUnit(2, 60, 60);
-  // aoi.UpdateUnit(1, 2, 2);
-  // aoi.RemoveUnit(1);
+  aoi.AddUnit(2, 2, 2);
+  aoi.AddUnit(3, 3, 3);
+  aoi.UpdateUnit(1, 60, 60);
+  aoi.UpdateUnit(1, 1, 1);
+  aoi.RemoveUnit(1);
 }
 
 void QuadTreeAOIUsage() {
@@ -72,11 +72,15 @@ int main(int argc, char const* argv[]) {
   (void)argc;
   (void)argv;
 
-  // AOIUsage<CrosslinkAOI>();
+  Log("%s", "CrosslinkAOI Usage:\n");
+  AOIUsage<CrosslinkAOI>();
+  Log("%s", "QuadTreeAOI Usage:\n");
   AOIUsage<QuadTreeAOI>();
-  for (int i = 1000; i <= 1000; i += 1000) {
-    // TestAOI<CrosslinkAOI>(i, "CrosslinkAOI");
-    // TestAOI<QuadTreeAOI>(i, "QuadTreeAOI");
+  for (int i = 1000; i <= 10000; i += 1000) {
+    srandom(0);
+    TestAOI<CrosslinkAOI>(i, "CrosslinkAOI");
+    srandom(0);
+    TestAOI<QuadTreeAOI>(i, "QuadTreeAOI");
   }
 
   return 0;

@@ -48,17 +48,9 @@ class QuadTreeAOI::QuadTree {
       return x >= x1 && x <= x2 && y >= y1 && y <= y2;
     }
 
-    bool Contains(const Box& other) const {
-      return other.x1 >= x1 && other.x2 <= x2 && other.y1 >= y1 &&
-             other.y2 <= y2;
-    }
-
     bool Intersects(const Box& other) const {
-      float cx1 = std::max(x1, other.x1);
-      float cy1 = std::max(y1, other.y1);
-      float cx2 = std::min(x2, other.x2);
-      float cy2 = std::min(y2, other.y2);
-      return Contains(Box(cx1, cy1, cx2, cy2));
+      return std::max(x1, other.x1) < std::min(x2, other.x2) &&
+             std::max(y1, other.y1) < std::min(y2, other.y2);
     }
   };
 
@@ -113,7 +105,7 @@ void QuadTreeAOI::QuadTree::Insert(QuadTreeNode* node, Unit* unit) {
       // Have no units
       unit_set.insert(const_cast<Unit*>(unit));
       unit->quad_tree_node = node;
-      Log("insert, %d(%f,%f), node=%p\n", unit->id, unit->x, unit->y, node);
+      // Log("insert, %d(%f,%f), node=%p\n", unit->id, unit->x, unit->y, node);
       return;
     } else {
       // Split current node
@@ -178,7 +170,9 @@ void QuadTreeAOI::QuadTree::Search(const QuadTreeNode* node, const Box& box,
   }
 
   for (auto unit : node->unit_set) {
-    unit_set.insert(unit);
+    if (box.Contains(unit->x, unit->y)) {
+      unit_set.insert(unit);
+    }
   }
 }
 
