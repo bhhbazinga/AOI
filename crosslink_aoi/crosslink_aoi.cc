@@ -1,7 +1,6 @@
 #include "crosslink_aoi/crosslink_aoi.h"
 
 #include <algorithm>
-#include <cassert>
 #include <cstring>
 #include <functional>
 #include <random>
