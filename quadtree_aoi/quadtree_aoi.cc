@@ -40,7 +40,7 @@ class QuadTreeAOI::QuadTree {
 
   void Insert(Unit* unit) { return Insert(root_, unit); };
 
-  AOI::UnitSet Search(const Box& box) {
+  AOI::UnitSet Search(const Box& box) const {
     AOI::UnitSet unit_set;
     Search(root_, box, unit_set);
     return unit_set;
@@ -80,7 +80,7 @@ class QuadTreeAOI::QuadTree {
 
  private:
   void Insert(QuadTreeNode* node, Unit* unit);
-  void Search(const QuadTreeNode* node, const Box& box, AOI::UnitSet& unit_set);
+  void Search(const QuadTreeNode* node, const Box& box, AOI::UnitSet& unit_set) const;
   void Destruct(QuadTreeNode* node) {
     if (nullptr == node) {
       return;
@@ -195,7 +195,7 @@ void QuadTreeAOI::QuadTree::Delete(Unit* unit) {
 }
 
 void QuadTreeAOI::QuadTree::Search(const QuadTreeNode* node, const Box& box,
-                                   AOI::UnitSet& unit_set) {
+                                   AOI::UnitSet& unit_set) const{
   if (!node->box.Intersects(box)) {
     return;
   }

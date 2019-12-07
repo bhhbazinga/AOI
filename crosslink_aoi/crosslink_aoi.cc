@@ -269,7 +269,7 @@ AOI::UnitSet CrosslinkAOI::FindNearbyUnit(const AOI::Unit* unit,
                                           float range) const {
   AOI::UnitSet x_set;
   auto x_for_func = [&](const Unit* other) {
-    if (fabs(unit->x - other->x) < range) {
+    if (fabs(unit->x - other->x) <= range) {
       x_set.insert(const_cast<Unit*>(other));
       return true;
     }
@@ -283,9 +283,10 @@ AOI::UnitSet CrosslinkAOI::FindNearbyUnit(const AOI::Unit* unit,
 
   AOI::UnitSet res_set;
   auto y_for_func = [&](const Unit* other) {
-    if (x_set.find(const_cast<Unit*>(other)) != x_set.end() &&
-        fabs(unit->y - other->y) < range) {
-      res_set.insert(const_cast<Unit*>(other));
+    if (fabs(unit->y - other->y) <= range) {
+      if (x_set.find(const_cast<Unit*>(other)) != x_set.end()) {
+        res_set.insert(const_cast<Unit*>(other));
+      }
       return true;
     }
     return false;

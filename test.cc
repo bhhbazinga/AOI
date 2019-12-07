@@ -4,18 +4,18 @@
 #include <chrono>
 #include <vector>
 
+#include <iostream>
 #include <memory>
 #include <string>
-#include <iostream>
 
 #define Log(fmt, ...)                  \
   do {                                 \
     fprintf(stderr, fmt, __VA_ARGS__); \
   } while (0)
 
-const int kMapWidth = 50;
-const int kMapHeight = 50;
-const int kVisibleRange = 5;
+const int kMapWidth = 64;
+const int kMapHeight = 64;
+const int kVisibleRange = 4;
 
 void enter_callback(int me, int other) {
   Log("[unit(%d)] Say: unit(%d) Enter to my range\n", me, other);
@@ -27,7 +27,13 @@ void leave_callback(int me, int other) {
 
 template <class AOIImpl>
 void AOIUsage() {
-  AOIImpl aoi(64, 64, 4, enter_callback, leave_callback);
+  AOIImpl aoi(kMapWidth, kMapHeight, kVisibleRange, enter_callback, leave_callback);
+  aoi.AddUnit(2, 8, 10);
+  aoi.AddUnit(4, 9, 1);
+
+  aoi.UpdateUnit(2, 1, 12);
+  aoi.UpdateUnit(4, 2, 7);
+
   aoi.AddUnit(1, 1, 1);
   aoi.AddUnit(2, 2, 2);
   aoi.AddUnit(3, 3, 3);
@@ -36,24 +42,24 @@ void AOIUsage() {
   aoi.RemoveUnit(1);
 }
 
-void QuadTreeAOIUsage() {
-  QuadTreeAOI qt_aoi(64, 64, 4, enter_callback, leave_callback);
-}
-
 template <class AOIImpl>
-void TestAOI(int max_units, const std::string& name) {
+void TestAOI(int max_units, const std::string& name, float addSeq[],
+             float updateSeq[]) {
   AOIImpl aoi(kMapWidth, kMapHeight, kVisibleRange, [](int, int) {},
               [](int, int) {});
   auto t1 = std::chrono::steady_clock::now();
   for (int i = 0; i < max_units; ++i) {
-    aoi.AddUnit(i, random() % kMapWidth, random() % kMapHeight);
+    // Log("AddUnit, %d,%f,%f\n", i, addSeq[i], addSeq[i + 1]);
+    aoi.AddUnit(i, addSeq[i], addSeq[i + 1]);
   }
   auto t2 = std::chrono::steady_clock::now();
   for (int i = 0; i < max_units; ++i) {
-    aoi.UpdateUnit(i, random() % kMapWidth, random() % kMapHeight);
+    // Log("UpdateUnit, %d,%f,%f\n", i, updateSeq[i], updateSeq[i + 1]);
+    aoi.UpdateUnit(i, updateSeq[i], updateSeq[i + 1]);
   }
   auto t3 = std::chrono::steady_clock::now();
   for (int i = 0; i < max_units; ++i) {
+    // Log("RemoveUnit,%d\n", i);
     aoi.RemoveUnit(i);
   }
   auto t4 = std::chrono::steady_clock::now();
@@ -75,12 +81,19 @@ int main(int argc, char const* argv[]) {
   Log("%s", "CrosslinkAOI Usage:\n");
   AOIUsage<CrosslinkAOI>();
   Log("%s", "QuadTreeAOI Usage:\n");
-  AOIUsage<QuadTreeAOI>();
-  for (int i = 1000; i <= 10000; i += 1000) {
-    srandom(0);
-    TestAOI<CrosslinkAOI>(i, "CrosslinkAOI");
-    srandom(0);
-    TestAOI<QuadTreeAOI>(i, "QuadTreeAOI");
+
+  for (int size = 1000; size <= 10000; size += 1000) {
+    float addSeq[size * 2];
+    float updateSeq[size * 2];
+    for (int i = 0; i < size * 2; i += 2) {
+      addSeq[i] = rand() % kMapWidth;
+      addSeq[i + 1] = rand() % kMapHeight;
+      updateSeq[i] = rand() % kMapWidth;
+      updateSeq[i + 1] = rand() % kMapHeight;
+    }
+
+    TestAOI<CrosslinkAOI>(size, "CrosslinkAOI", addSeq, updateSeq);
+    TestAOI<QuadTreeAOI>(size, "QuadTreeAOI", addSeq, updateSeq);
   }
 
   return 0;
