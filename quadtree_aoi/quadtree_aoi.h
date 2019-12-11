@@ -20,7 +20,8 @@ class QuadTreeAOI : public AOI {
   void RemoveUnit(UnitID id) override;
 
  protected:
-  AOI::UnitSet FindNearbyUnit(const AOI::Unit*,float range) const override;
+  AOI::UnitSet FindNearbyUnit(const AOI::Unit* unit,
+                              float range) const override;
 
  private:
   AOI::Unit* NewUnit(UnitID id, float x, float y) override;
@@ -28,4 +29,4 @@ class QuadTreeAOI : public AOI {
 
   QuadTree* quad_tree_;
 };
-#endif
+#endif  // QUADTREE_AOI_H

@@ -207,11 +207,11 @@ struct CrosslinkAOI::Unit : AOI::Unit {
 };
 
 AOI::Unit* CrosslinkAOI::NewUnit(UnitID id, float x, float y) {
-  return reinterpret_cast<AOI::Unit*>(new Unit(id, x, y));
+  return static_cast<AOI::Unit*>(new Unit(id, x, y));
 }
 
 void CrosslinkAOI::DeleteUnit(AOI::Unit* unit) {
-  delete reinterpret_cast<Unit*>(unit);
+  delete static_cast<Unit*>(unit);
 }
 
 CrosslinkAOI::CrosslinkAOI(float width, float height, float visible_range,
@@ -234,7 +234,7 @@ CrosslinkAOI::~CrosslinkAOI() {
 void CrosslinkAOI::AddUnit(UnitID id, float x, float y) {
   ValidatePosition(x, y);
 
-  Unit* unit = reinterpret_cast<Unit*>(NewUnit(id, x, y));
+  Unit* unit = static_cast<Unit*>(NewUnit(id, x, y));
   unit->x_skip_node = x_list_->Insert(unit);
   unit->y_skip_node = y_list_->Insert(unit);
 
@@ -244,7 +244,7 @@ void CrosslinkAOI::AddUnit(UnitID id, float x, float y) {
 void CrosslinkAOI::UpdateUnit(UnitID id, float x, float y) {
   ValidatePosition(x, y);
 
-  Unit* unit = reinterpret_cast<Unit*>(get_unit(id));
+  Unit* unit = static_cast<Unit*>(get_unit(id));
   SkipList::SkipNode* x_skip_node = unit->x_skip_node;
   SkipList::SkipNode* y_skip_node = unit->y_skip_node;
   x_list_->Erase(x_skip_node);
@@ -258,7 +258,7 @@ void CrosslinkAOI::UpdateUnit(UnitID id, float x, float y) {
 }
 
 void CrosslinkAOI::RemoveUnit(UnitID id) {
-  Unit* unit = reinterpret_cast<Unit*>(get_unit(id));
+  Unit* unit = static_cast<Unit*>(get_unit(id));
 
   x_list_->EraseAndDelete(unit->x_skip_node);
   y_list_->EraseAndDelete(unit->y_skip_node);
@@ -270,7 +270,7 @@ AOI::UnitSet CrosslinkAOI::FindNearbyUnit(const AOI::Unit* unit,
                                           float range) const {
   AOI::UnitSet x_set;
   auto x_for_func = [&](const Unit* other) {
-    if (fabs(unit->x - other->x) < range) {
+    if (fabs(unit->x - other->x) <= range) {
       x_set.insert(const_cast<Unit*>(other));
       return true;
     }
@@ -278,14 +278,14 @@ AOI::UnitSet CrosslinkAOI::FindNearbyUnit(const AOI::Unit* unit,
   };
 
   SkipList::SkipNode* x_skip_node =
-      reinterpret_cast<Unit*>(const_cast<AOI::Unit*>(unit))->x_skip_node;
+      static_cast<Unit*>(const_cast<AOI::Unit*>(unit))->x_skip_node;
   x_list_->ForeachForward(x_list_->Next(x_skip_node), x_for_func);
   x_list_->ForeachBackward(x_list_->Prev(x_skip_node), x_for_func);
 
   AOI::UnitSet res_set;
   auto y_for_func = [&](const Unit* other) {
     if (x_set.find(const_cast<Unit*>(other)) != x_set.end() &&
-        fabs(unit->y - other->y) < range) {
+        fabs(unit->y - other->y) <= range) {
       res_set.insert(const_cast<Unit*>(other));
       return true;
     }
@@ -293,7 +293,7 @@ AOI::UnitSet CrosslinkAOI::FindNearbyUnit(const AOI::Unit* unit,
   };
 
   SkipList::SkipNode* y_skip_node =
-      reinterpret_cast<Unit*>(const_cast<AOI::Unit*>(unit))->y_skip_node;
+      static_cast<Unit*>(const_cast<AOI::Unit*>(unit))->y_skip_node;
   y_list_->ForeachForward(y_list_->Next(y_skip_node), y_for_func);
   y_list_->ForeachBackward(y_list_->Prev(y_skip_node), y_for_func);
   return res_set;

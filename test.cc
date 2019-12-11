@@ -4,9 +4,9 @@
 #include <chrono>
 #include <vector>
 
+#include <iostream>
 #include <memory>
 #include <string>
-#include <iostream>
 
 #define Log(fmt, ...)                  \
   do {                                 \
@@ -78,6 +78,5 @@ int main(int argc, char const* argv[]) {
     // TestAOI<CrosslinkAOI>(i, "CrosslinkAOI");
     // TestAOI<QuadTreeAOI>(i, "QuadTreeAOI");
   }
-
   return 0;
 }

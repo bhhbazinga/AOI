@@ -130,7 +130,7 @@ void QuadTreeAOI::QuadTree::Insert(QuadTreeNode* node, Unit* unit) {
                                               box.y1, box.x2, mid_y, node);
       node->leaf = false;
       for (auto old_unit : unit_set) {
-        Insert(node, reinterpret_cast<Unit*>(old_unit));
+        Insert(node, static_cast<Unit*>(old_unit));
       }
       unit_set.clear();
     }
@@ -200,7 +200,7 @@ QuadTreeAOI::~QuadTreeAOI() {
 void QuadTreeAOI::AddUnit(UnitID id, float x, float y) {
   ValidatePosition(x, y);
 
-  Unit* unit = reinterpret_cast<Unit*>(NewUnit(id, x, y));
+  Unit* unit = static_cast<Unit*>(NewUnit(id, x, y));
   quad_tree_->Insert(unit);
 
   OnAddUnit(unit);
@@ -209,7 +209,7 @@ void QuadTreeAOI::AddUnit(UnitID id, float x, float y) {
 void QuadTreeAOI::UpdateUnit(UnitID id, float x, float y) {
   ValidatePosition(x, y);
 
-  Unit* unit = reinterpret_cast<Unit*>(get_unit(id));
+  Unit* unit = static_cast<Unit*>(get_unit(id));
   quad_tree_->Delete(unit);
   unit->x = x;
   unit->y = y;
@@ -219,7 +219,7 @@ void QuadTreeAOI::UpdateUnit(UnitID id, float x, float y) {
 }
 
 void QuadTreeAOI::RemoveUnit(UnitID id) {
-  Unit* unit = reinterpret_cast<Unit*>(get_unit(id));
+  Unit* unit = static_cast<Unit*>(get_unit(id));
   quad_tree_->Delete(unit);
 
   OnRemoveUnit(unit);
@@ -242,5 +242,5 @@ AOI::Unit* QuadTreeAOI::NewUnit(UnitID id, float x, float y) {
 }
 
 void QuadTreeAOI::DeleteUnit(AOI::Unit* unit) {
-  delete reinterpret_cast<Unit*>(unit);
+  delete static_cast<Unit*>(unit);
 }
