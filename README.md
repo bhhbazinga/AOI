@@ -65,3 +65,5 @@ Output:
 ```
 # Benchmark
 ![](benchmark.png)
+The above data was tested on my cpu i7-7700K.\
+We simulate N random moves of N units in a 1024*1024 map, each unit has 30 visible range. (1000<=N<=10000)
