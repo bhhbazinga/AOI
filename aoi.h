@@ -143,12 +143,6 @@ class AOI {
     return res;
   }
 
-  void NotifyAll(Unit* unit, const UnitSet& enter_set,
-                 const UnitSet& leave_set) const {
-    NotifyEnter(unit, enter_set);
-    NotifyLeave(unit, leave_set);
-  }
-
   void NotifyEnter(Unit* unit, const UnitSet& enter_set) const {
     for (const auto& other : enter_set) {
       enter_callback_(other->id, unit->id);
@@ -162,6 +156,8 @@ class AOI {
     for (const auto& other : leave_set) {
       leave_callback_(other->id, unit->id);
       other->UnSubscribe(unit);
+      leave_callback_(unit->id, other->id);
+      unit->UnSubscribe(other);
     }
   }
 
@@ -176,18 +172,18 @@ class AOI {
   void OnUpdateUnit(Unit* unit) {
     const UnitSet& old_set = unit->subscribe_set;
     UnitSet new_set =
-        FindNearbyUnit(static_cast<Unit*>(unit), visible_range_);
+    FindNearbyUnit(static_cast<Unit*>(unit), visible_range_);
     UnitSet move_set = Intersection(old_set, new_set);
     UnitSet enter_set = Difference(new_set, move_set);
     UnitSet leave_set = Difference(old_set, new_set);
     unit->subscribe_set = std::move(new_set);
-
-    NotifyAll(static_cast<Unit*>(unit), enter_set, leave_set);
+    NotifyEnter(reinterpret_cast<Unit*>(unit), enter_set);
+    NotifyLeave(reinterpret_cast<Unit*>(unit), leave_set);
   }
 
   void OnRemoveUnit(Unit* unit) {
     const UnitSet& subscribe_set = unit->subscribe_set;
-    NotifyLeave(unit, subscribe_set);
+    NotifyLeave(unit, UnitSet(subscribe_set));
     unit_map_.erase(unit->id);
     DeleteUnit(unit);
   }
