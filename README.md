@@ -1,5 +1,5 @@
 # AOI
-Area Of Interest(AOI) is a location service, when a unit enters or leaves the visible range of another unit, the enter event or leave event fired. In addition, we can use AOI to query other units near one unit. All of the above processes are efficient.
+Area Of Interest(AOI) is a location service, when a unit defined by (id, x, y) enters or leaves the visible range of another unit, the enter event or leave event fired, and We can also use AOI to query other units near one unit, All of these processes are efficient.
 The purpose of this project is to compare the performance of three AOI models. They are Crosslink-Model, QuadTree-Model and Tower-Model.
 # Usage
 ```C++
