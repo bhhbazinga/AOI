@@ -3,11 +3,6 @@
 
 #include "tower_aoi/tower_aoi.h"
 
-#define Log(fmt, ...)                  \
-  do {                                 \
-    fprintf(stderr, fmt, __VA_ARGS__); \
-  } while (0)
-
 struct TowerAOI::Tower {
   AOI::UnitSet unit_set;  // units in same grid
 };
