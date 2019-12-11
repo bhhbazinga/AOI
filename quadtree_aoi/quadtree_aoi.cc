@@ -80,7 +80,8 @@ class QuadTreeAOI::QuadTree {
 
  private:
   void Insert(QuadTreeNode* node, Unit* unit);
-  void Search(const QuadTreeNode* node, const Box& box, AOI::UnitSet& unit_set) const;
+  void Search(const QuadTreeNode* node, const Box& box,
+              AOI::UnitSet& unit_set) const;
   void Destruct(QuadTreeNode* node) {
     if (nullptr == node) {
       return;
@@ -168,10 +169,6 @@ void QuadTreeAOI::QuadTree::Insert(QuadTreeNode* node, Unit* unit) {
       node->bottom_right() = new QuadTreeNode(
           node->depth + 1, Box(mid_x, box.y1, box.x2, mid_y), node);
       node->leaf = false;
-<<<<<<< HEAD
-      for (auto old_unit : unit_set) {
-        Insert(node, static_cast<Unit*>(old_unit));
-=======
 
       Unit* p = node->head->next;
       while (p != node->tail) {
@@ -179,7 +176,6 @@ void QuadTreeAOI::QuadTree::Insert(QuadTreeNode* node, Unit* unit) {
         node->Delete(p);
         Insert(node, p);
         p = temp;
->>>>>>> b62620c802b61526668423d1d09c0385a5e400b4
       }
     }
   }
@@ -200,7 +196,7 @@ void QuadTreeAOI::QuadTree::Delete(Unit* unit) {
 }
 
 void QuadTreeAOI::QuadTree::Search(const QuadTreeNode* node, const Box& box,
-                                   AOI::UnitSet& unit_set) const{
+                                   AOI::UnitSet& unit_set) const {
   if (!node->box.Intersects(box)) {
     return;
   }
@@ -239,6 +235,7 @@ QuadTreeAOI::~QuadTreeAOI() {
 }
 
 void QuadTreeAOI::AddUnit(UnitID id, float x, float y) {
+  ValidatetUnitID(id);
   ValidatePosition(x, y);
 
   Unit* unit = static_cast<Unit*>(NewUnit(id, x, y));

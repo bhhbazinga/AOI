@@ -6,7 +6,7 @@ EXEC = test
 all: $(EXEC)
 
 $(EXEC): test.cc crosslink_aoi.o quadtree_aoi.o tower_aoi.o
-	$(CXX) $(CXXFLAGS) -o $(EXEC) test.cc crosslink_aoi.o quadtree_aoi.o -I./
+	$(CXX) $(CXXFLAGS) -o $(EXEC) test.cc crosslink_aoi.o quadtree_aoi.o tower_aoi.o -I./
 
 crosslink_aoi.o:crosslink_aoi/crosslink_aoi.cc crosslink_aoi/crosslink_aoi.h  aoi.h
 	$(CXX) $(CXXFLAGS) -o crosslink_aoi.o -c crosslink_aoi/crosslink_aoi.cc -I./

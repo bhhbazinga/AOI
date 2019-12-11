@@ -25,14 +25,11 @@ class TowerAOI : public AOI {
  private:
   AOI::Unit* NewUnit(UnitID id, float x, float y) override;
   void DeleteUnit(AOI::Unit* unit) override;
-  void ForeachNeadbyTower(const AOI::Unit* unit,
-                          std::function<void(const Tower*)>) const;
+  void CalculateRowCol(const AOI::Unit* unit, int* row, int* col) const;
 
-  const float grid_size_;
-  const int cols_;
   const int rows_;
+  const int cols_;
   Tower** towers_;
-  static const int near_[][2];
 };
 
 #endif  // TOWER_AOI_H

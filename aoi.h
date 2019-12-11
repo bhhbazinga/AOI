@@ -79,7 +79,7 @@ class AOI {
     return id_set;
   };
 
-  // Find the ids of units in the subscribe set of given id
+  // Find units in the subscribe set of given id
   std::unordered_set<int> GetSubScribeSet(UnitID id) const {
     Unit* unit = get_unit(id);
     UnitSet subscribe_set = unit->subscribe_set;
@@ -94,7 +94,9 @@ class AOI {
   const float& get_height() const { return height_; }
 
  protected:
+  // Find units in the given range
   virtual UnitSet FindNearbyUnit(const Unit* unit, float range) const = 0;
+
   virtual Unit* NewUnit(UnitID id, float x, float y) = 0;
   virtual void DeleteUnit(Unit* unit) = 0;
 
@@ -102,11 +104,17 @@ class AOI {
     assert(x <= width_ && y <= height_);
   }
 
+  void ValidatetUnitID(UnitID id) {
+    assert(unit_map_.find(id) == unit_map_.end());
+  }
+
   Unit* get_unit(UnitID id) const {
     Unit* unit = unit_map_[id];
     assert(nullptr != unit);
     return unit;
   }
+
+  float get_visible_range() const { return visible_range_; }
 
   const std::unordered_map<int, Unit*>& get_unit_map() const {
     return unit_map_;
@@ -171,14 +179,13 @@ class AOI {
 
   void OnUpdateUnit(Unit* unit) {
     const UnitSet& old_set = unit->subscribe_set;
-    UnitSet new_set =
-    FindNearbyUnit(static_cast<Unit*>(unit), visible_range_);
+    UnitSet new_set = FindNearbyUnit(static_cast<Unit*>(unit), visible_range_);
     UnitSet move_set = Intersection(old_set, new_set);
     UnitSet enter_set = Difference(new_set, move_set);
     UnitSet leave_set = Difference(old_set, new_set);
     unit->subscribe_set = std::move(new_set);
-    NotifyEnter(reinterpret_cast<Unit*>(unit), enter_set);
-    NotifyLeave(reinterpret_cast<Unit*>(unit), leave_set);
+    NotifyEnter(static_cast<Unit*>(unit), enter_set);
+    NotifyLeave(static_cast<Unit*>(unit), leave_set);
   }
 
   void OnRemoveUnit(Unit* unit) {

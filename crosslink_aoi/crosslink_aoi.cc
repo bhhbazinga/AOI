@@ -231,6 +231,7 @@ CrosslinkAOI::~CrosslinkAOI() {
 }
 
 void CrosslinkAOI::AddUnit(UnitID id, float x, float y) {
+  ValidatetUnitID(id);
   ValidatePosition(x, y);
 
   Unit* unit = static_cast<Unit*>(NewUnit(id, x, y));
@@ -283,16 +284,10 @@ AOI::UnitSet CrosslinkAOI::FindNearbyUnit(const AOI::Unit* unit,
 
   AOI::UnitSet res_set;
   auto y_for_func = [&](const Unit* other) {
-<<<<<<< HEAD
-    if (x_set.find(const_cast<Unit*>(other)) != x_set.end() &&
-        fabs(unit->y - other->y) <= range) {
-      res_set.insert(const_cast<Unit*>(other));
-=======
     if (fabs(unit->y - other->y) <= range) {
       if (x_set.find(const_cast<Unit*>(other)) != x_set.end()) {
         res_set.insert(const_cast<Unit*>(other));
       }
->>>>>>> b62620c802b61526668423d1d09c0385a5e400b4
       return true;
     }
     return false;
