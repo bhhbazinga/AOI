@@ -63,3 +63,5 @@ Output:
 [unit(2)] Say: unit(3) Leave from my range
 [unit(3)] Say: unit(2) Leave from my range
 ```
+# Benchmark
+![](benchmark.png)
