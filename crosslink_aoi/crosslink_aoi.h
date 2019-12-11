@@ -2,7 +2,6 @@
 #define CROSSLINK_AOI_H
 
 #include "aoi.h"
-#include "crosslink_aoi/crosslink_aoi.h"
 
 // The cross-link model is optimized using skiplist
 class CrosslinkAOI : public AOI {

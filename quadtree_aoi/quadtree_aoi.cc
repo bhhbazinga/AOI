@@ -1,9 +1,6 @@
-#include "quadtree_aoi/quadtree_aoi.h"
-
-#include <algorithm>
 #include <cstring>
-#include <functional>
-#include <vector>
+
+#include "quadtree_aoi/quadtree_aoi.h"
 
 const int kMaxDegree = 5;
 

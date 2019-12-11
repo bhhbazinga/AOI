@@ -1,9 +1,7 @@
-#include "crosslink_aoi/crosslink_aoi.h"
-
-#include <algorithm>
 #include <cstring>
-#include <functional>
 #include <random>
+
+#include "crosslink_aoi/crosslink_aoi.h"
 
 // It's almost guaranteed to be logn if the maximum number of nodes range in 0
 // to 2^14

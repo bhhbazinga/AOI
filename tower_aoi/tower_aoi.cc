@@ -1,4 +1,3 @@
-#include <algorithm>
 #include <cmath>
 
 #include "tower_aoi/tower_aoi.h"

@@ -3,11 +3,6 @@
 #include "tower_aoi/tower_aoi.h"
 
 #include <chrono>
-#include <vector>
-
-#include <iostream>
-#include <memory>
-#include <string>
 
 #define Log(fmt, ...)                  \
   do {                                 \
