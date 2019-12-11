@@ -23,6 +23,7 @@ void leave_callback(int me, int other) {
 }
 
 void Usage() {
+  // You can easily replace TowerAOI with CrossLinkAOI or QuadTreeAOI
   TowerAOI aoi(kMapWidth, kMapHeight, kVisibleRange, enter_callback,
               leave_callback);
   // Add three units, you need your custom numeric id and the coordinate of unit.
@@ -66,4 +67,6 @@ Output:
 # Benchmark
 ![](benchmark.png)
 The above data was tested on my cpu i7-7700K.\
-We simulate N random moves of N units in a 1024*1024 map, each unit has 30 visible range. (1000<=N<=10000)
+We simulate N random moves of N units in a 1024*1024 map, each unit has 30 visible range. (1000<=N<=10000) \
+See [test](test.cc).
+
