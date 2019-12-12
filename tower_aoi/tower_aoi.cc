@@ -51,9 +51,7 @@ void TowerAOI::UpdateUnit(UnitID id, float x, float y) {
   unit->x = x;
   unit->y = y;
   CalculateRowCol(unit, &new_row, &new_col);
-  if (old_row == new_row && old_col == new_col) {
-    return;
-  }
+
   towers_[old_row][old_col].unit_set.erase(unit);
   towers_[new_row][new_col].unit_set.insert(unit);
 
